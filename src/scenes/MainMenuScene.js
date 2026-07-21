@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import PlayerManager from '../managers/PlayerManager.js';
-import SaveManager from '../managers/SaveManager.js';
 
 /**
  * MainMenuScene - Menu utama dengan info pemain
@@ -34,7 +33,6 @@ export default class MainMenuScene extends Phaser.Scene {
         const hfish = PlayerManager.getHfish();
         const avatar = PlayerManager.getAvatar();
 
-        // Avatar placeholder
         const avatarColors = [0x4ac5ff, 0xff6b6b, 0x51cf66, 0xffd43b];
         this.add.rectangle(w / 2, 130, 64, 64, avatarColors[avatar] || 0x4ac5ff, 0.5);
         this.add.text(w / 2, 130, `A${avatar + 1}`, {
@@ -53,7 +51,6 @@ export default class MainMenuScene extends Phaser.Scene {
             color: '#8899aa',
         }).setOrigin(0.5);
 
-        // Currency display
         const currencyY = 240;
         this.add.text(w / 2 - 120, currencyY, `🪙 ${gold}`, { fontSize: '16px', color: '#ffd700' });
         this.add.text(w / 2, currencyY, `💎 ${diamond}`, { fontSize: '16px', color: '#00ccff' });
@@ -61,9 +58,9 @@ export default class MainMenuScene extends Phaser.Scene {
 
         // ==================== MENU BUTTONS ====================
         const buttons = [
-            { label: '🎣  Start Fishing',   scene: 'FishingScene',    active: true },
+            { label: '🎣  Start Fishing',   scene: 'FishingHubScene', active: true },
             { label: '📦  Inventory',       scene: 'InventoryScene',  active: true },
-            { label: '📖  Fish Book',       scene: null,              active: false },
+            { label: '📖  Fish Book',       scene: 'FishBookScene',   active: true },
             { label: '⚙  Settings',         scene: 'SettingsScene',   active: true },
             { label: '🔒  Coming Soon',     scene: null,              active: false },
         ];

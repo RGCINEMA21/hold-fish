@@ -5,9 +5,7 @@ import SaveManager from './SaveManager.js';
 
 export default class PlayerManager {
 
-    constructor() {
-        this._data = null;
-    }
+    constructor() { this._data = null; }
 
     getData()     { return this._data; }
     load()        { this._data = SaveManager.load(); return this._data; }
@@ -24,15 +22,12 @@ export default class PlayerManager {
     getExp()      { return this._data?.progress?.exp ?? 0; }
     addExp(amount) {
         this._data.progress.exp += amount;
-        this._checkLevelUp();
-        this.save();
-    }
-    _checkLevelUp() {
         const needed = this._data.progress.level * 100;
         while (this._data.progress.exp >= needed) {
             this._data.progress.exp -= needed;
             this._data.progress.level++;
         }
+        this.save();
     }
 
     // ==================== CURRENCY ====================
@@ -56,15 +51,51 @@ export default class PlayerManager {
         }
         return false;
     }
+    addBait(baitId, amount) {
+        if (this._data.equipment.bait === baitId) {
+            this._data.equipment.baitAmount += amount;
+        } else {
+            this._data.equipment.bait = baitId;
+            this._data.equipment.baitAmount = amount;
+        }
+        this.save();
+    }
+    setHook(hookId) {
+        this._data.equipment.hook = hookId;
+        this.save();
+    }
+    setRod(rodId) {
+        this._data.equipment.rod = rodId;
+        this.save();
+    }
+
+    // ==================== OWNED ITEMS ====================
+    getOwnedRods()  { return this._data?.rods ?? ['wood_rod']; }
+    getOwnedHooks() { return this._data?.hooks ?? ['basic_hook']; }
+    addOwnedRod(rodId) {
+        if (!this._data.rods) this._data.rods = ['wood_rod'];
+        if (!this._data.rods.includes(rodId)) this._data.rods.push(rodId);
+        this.save();
+    }
+    addOwnedHook(hookId) {
+        if (!this._data.hooks) this._data.hooks = ['basic_hook'];
+        if (!this._data.hooks.includes(hookId)) this._data.hooks.push(hookId);
+        this.save();
+    }
 
     // ==================== LOCATION ====================
     getCurrentSpot() { return this._data?.location?.currentSpot ?? ''; }
+    setCurrentSpot(spotId) { this._data.location.currentSpot = spotId; this.save(); }
 
     // ==================== INVENTORY ====================
     getInventory()  { return this._data?.inventory ?? []; }
-    addToInventory(fish) {
+    addToInventory(item) {
         if (!this._data.inventory) this._data.inventory = [];
-        this._data.inventory.push(fish);
+        this._data.inventory.push(item);
+        this.save();
+    }
+    removeFromInventory(index) {
+        this._data.inventory.splice(index, 1);
         this.save();
     }
 
@@ -76,11 +107,14 @@ export default class PlayerManager {
         if (existing) {
             existing.caught++;
             if (weight > existing.biggestWeight) existing.biggestWeight = weight;
+            existing.lastCaught = new Date().toISOString();
         } else {
             this._data.fishCollection.push({
                 id: fishId,
                 caught: 1,
                 biggestWeight: weight,
+                firstCaught: new Date().toISOString(),
+                lastCaught: new Date().toISOString(),
             });
         }
         this.save();

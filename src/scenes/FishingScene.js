@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import PlayerManager from '../managers/PlayerManager.js';
+import InventoryManager from '../managers/InventoryManager.js';
 import DataManager from '../core/DataManager.js';
 import FishingSystem from '../systems/FishingSystem.js';
 
@@ -13,6 +14,7 @@ export default class FishingScene extends Phaser.Scene {
 
     create() {
         PlayerManager.load();
+        this.isFishing = false;
 
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
@@ -32,12 +34,10 @@ export default class FishingScene extends Phaser.Scene {
         const hook = DataManager.getHookByID(pd.equipment.hook);
         const bait = DataManager.getBaitByID(pd.equipment.bait);
 
-        // Title
         this.add.text(w / 2, 24, spot?.name ?? 'Unknown Spot', {
             fontSize: '26px', color: '#4ac5ff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
-        // Left panel - Player info
         const lx = 20, ly = 60;
         const style = { fontSize: '14px', color: '#cccccc' };
 
@@ -47,14 +47,12 @@ export default class FishingScene extends Phaser.Scene {
         this.add.text(lx, ly + 66, `💎 ${pd.currency.diamond}`, { fontSize: '14px', color: '#00ccff' });
         this.add.text(lx, ly + 88, `🐟 ${pd.currency.hfish}`,  { fontSize: '14px', color: '#00ff88' });
 
-        // Right panel - Equipment
         const rx = w - 200;
         this.add.text(rx, ly,      `🎣 ${rod?.name ?? '-'}`, style);
         this.add.text(rx, ly + 22, `🪝 ${hook?.name ?? '-'}`, style);
         this.add.text(rx, ly + 44, `🪱 ${bait?.name ?? '-'}`, style);
         this.add.text(rx, ly + 66, `📦 Bait: ${pd.equipment.baitAmount}`, style);
 
-        // Center - Weather & Season & Time
         const cx = w / 2;
         this.infoTexts.weather = this.add.text(cx, ly + 80, '', { fontSize: '13px', color: '#aabbcc' }).setOrigin(0.5);
         this.infoTexts.season  = this.add.text(cx, ly + 98, '', { fontSize: '13px', color: '#aabbcc' }).setOrigin(0.5);
@@ -99,10 +97,10 @@ export default class FishingScene extends Phaser.Scene {
     // ==================== BACK BUTTON ====================
 
     _buildBackButton(w, h) {
-        const backBtn = this.add.text(20, h - 30, '← Menu', {
+        const backBtn = this.add.text(20, h - 30, '← Back', {
             fontSize: '16px', color: '#888888',
         }).setInteractive({ useHandCursor: true });
-        backBtn.on('pointerdown', () => this.scene.start('MainMenuScene'));
+        backBtn.on('pointerdown', () => this.scene.start('FishingHubScene'));
     }
 
     // ==================== FISHING LOGIC ====================
@@ -110,21 +108,18 @@ export default class FishingScene extends Phaser.Scene {
     _onStartFishing() {
         if (this.isFishing) return;
 
-        // Cek umpan
         if (PlayerManager.getBaitAmount() <= 0) {
             this._showMessage("You don't have bait.");
             return;
         }
 
-        // Kurangi umpan
         PlayerManager.useBait();
         this.isFishing = true;
 
-        // Disable tombol
         this.startBtn.setStyle({ backgroundColor: '#333333' });
         this.startBtn.setText('⏳ Fishing...');
+        this.startBtn.disableInteractive();
 
-        // Animasi placeholder: delay 5 detik
         this.time.delayedCall(5000, () => {
             this._processResult();
         });
@@ -137,14 +132,8 @@ export default class FishingScene extends Phaser.Scene {
             const fish = result.fish;
             const weight = result.weight;
 
-            // Tambah ke inventory
-            PlayerManager.addToInventory({
-                fishId: fish.id,
-                name: fish.name,
-                rarity: fish.rarity,
-                weight: weight,
-                caughtAt: new Date().toISOString(),
-            });
+            // Gunakan InventoryManager agar type:'fish' ter-include
+            InventoryManager.addFish(fish, weight);
 
             // Tambah ke collection
             PlayerManager.addToCollection(fish.id, weight);
@@ -156,19 +145,11 @@ export default class FishingScene extends Phaser.Scene {
             const expGain = Math.floor(fish.price / 2) + 10;
             PlayerManager.addExp(expGain);
 
-            // Tampilkan popup hasil
+            // Tampilkan popup hasil (OK button akan handle restart)
             this._showCatchPopup(fish, weight, result.isNew);
         } else {
             this._showMessage(result.message);
         }
-
-        // Reset tombol
-        this.isFishing = false;
-        this.startBtn.setStyle({ backgroundColor: '#2a7a3a' });
-        this.startBtn.setText('🎣  START FISHING');
-
-        // Update bait display
-        this.scene.restart();
     }
 
     // ==================== POPUPS ====================
@@ -179,43 +160,43 @@ export default class FishingScene extends Phaser.Scene {
 
         const rarityColors = { common: '#aaaaaa', uncommon: '#55cc55', rare: '#5599ff', epic: '#aa55ff', legendary: '#ffaa00' };
 
-        // Dim
         const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.7).setInteractive();
-
-        // Panel
         const panel = this.add.rectangle(w / 2, h / 2, 360, 260, 0x1a2a3a).setStrokeStyle(2, 0x4a9eff);
 
-        // Content
-        this.add.text(w / 2, h / 2 - 100, isNew ? '🎉 NEW SPECIES DISCOVERED!' : '🐟 Fish Caught!', {
+        const title = this.add.text(w / 2, h / 2 - 100, isNew ? '🎉 NEW SPECIES DISCOVERED!' : '🐟 Fish Caught!', {
             fontSize: '20px', color: isNew ? '#ffd700' : '#ffffff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
-        this.add.text(w / 2, h / 2 - 65, fish.name, {
+        const nameText = this.add.text(w / 2, h / 2 - 65, fish.name, {
             fontSize: '24px', color: rarityColors[fish.rarity] || '#ffffff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
-        this.add.text(w / 2, h / 2 - 38, `${fish.rarity.toUpperCase()} · ${weight.toFixed(2)} kg`, {
+        const infoText = this.add.text(w / 2, h / 2 - 38, `${fish.rarity.toUpperCase()} · ${weight.toFixed(2)} kg`, {
             fontSize: '14px', color: '#cccccc',
         }).setOrigin(0.5);
 
-        this.add.text(w / 2, h / 2 - 15, `Sell Price: 🪙 ${fish.price}`, {
+        const priceText = this.add.text(w / 2, h / 2 - 15, `Sell Price: 🪙 ${fish.price}`, {
             fontSize: '16px', color: '#ffd700',
         }).setOrigin(0.5);
 
-        this.add.text(w / 2, h / 2 + 12, fish.description, {
+        const descText = this.add.text(w / 2, h / 2 + 12, fish.description, {
             fontSize: '12px', color: '#888888', wordWrap: { width: 300 }, align: 'center',
         }).setOrigin(0.5);
 
-        // OK button
+        const expGain = Math.floor(fish.price / 2) + 10;
+        const expText = this.add.text(w / 2, h / 2 + 42, `+${expGain} EXP`, {
+            fontSize: '14px', color: '#00ff88',
+        }).setOrigin(0.5);
+
         const okBtn = this.add.text(w / 2, h / 2 + 80, 'OK', {
             fontSize: '18px', color: '#ffffff', backgroundColor: '#2a7a3a',
             padding: { x: 40, y: 10 },
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         okBtn.on('pointerdown', () => {
-            dim.destroy();
-            panel.destroy();
-            okBtn.destroy();
+            dim.destroy(); panel.destroy(); title.destroy();
+            nameText.destroy(); infoText.destroy(); priceText.destroy();
+            descText.destroy(); expText.destroy(); okBtn.destroy();
             this.scene.restart();
         });
     }
@@ -237,10 +218,12 @@ export default class FishingScene extends Phaser.Scene {
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         okBtn.on('pointerdown', () => {
-            dim.destroy();
-            panel.destroy();
-            text.destroy();
-            okBtn.destroy();
+            dim.destroy(); panel.destroy(); text.destroy(); okBtn.destroy();
+            // Re-enable fishing after dismissing error
+            this.isFishing = false;
+            this.startBtn.setStyle({ backgroundColor: '#2a7a3a' });
+            this.startBtn.setText('🎣  START FISHING');
+            this.startBtn.setInteractive({ useHandCursor: true });
         });
     }
 }
