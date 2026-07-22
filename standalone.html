@@ -1,0 +1,2389 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HOLD FISH</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; background:#1a2a3a; touch-action:none; }
+#game-container { width:100%; height:100%; }
+</style>
+</head>
+<body>
+<div id="game-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<script>
+
+// ===== DATA =====
+const achievementData = [
+    { id: 'catch_10', name: 'First Catch', description: 'Catch 10 fish', reward: { gold: 100 }, icon: '🐟' },
+    { id: 'catch_100', name: 'Experienced Angler', description: 'Catch 100 fish', reward: { gold: 500 }, icon: '🎣' },
+    { id: 'catch_1000', name: 'Master Angler', description: 'Catch 1000 fish', reward: { gold: 2000, diamond: 10 }, icon: '🏆' },
+    { id: 'catch_legendary', name: 'Legendary Catch', description: 'Catch a legendary fish', reward: { gold: 1000, diamond: 5 }, icon: '⭐' },
+    { id: 'catch_boss', name: 'Boss Slayer', description: 'Catch a boss fish', reward: { gold: 5000, diamond: 20 }, icon: '👑' },
+    { id: 'unlock_ocean', name: 'Ocean Explorer', description: 'Unlock Ocean spot', reward: { gold: 300 }, icon: '🌊' },
+    { id: 'fish_book_50', name: 'Fish Collector', description: 'Complete 50% Fish Book', reward: { diamond: 15 }, icon: '📖' },
+    { id: 'fish_book_100', name: 'Fish Encyclopedia', description: 'Complete Fish Book', reward: { diamond: 50 }, icon: '📚' },
+    { id: 'upgrade_rod_10', name: 'Rod Master', description: 'Upgrade rod to Lv10', reward: { gold: 800 }, icon: '🔧' },
+    { id: 'biggest_10kg', name: 'Big Catch', description: 'Catch a fish over 10kg', reward: { gold: 200 }, icon: '⚖️' },
+];
+var achievementData;
+
+const baitData = [
+    { id: 'worm_bait',     name: 'Worm Bait',     price: 10,   preferredFish: ['common_carp', 'catfish', 'bluegill'], rarityBonus: 0,   description: 'Cacing umpan dasar.' },
+    { id: 'cricket_bait',  name: 'Cricket Bait',  price: 20,   preferredFish: ['bluegill', 'trout', 'minnow'],        rarityBonus: 0,   description: 'Jangkrik segar.' },
+    { id: 'shrimp_bait',   name: 'Shrimp Bait',   price: 35,   preferredFish: ['trout', 'bass', 'flounder'],           rarityBonus: 5,   description: 'Udang segar dari laut.' },
+    { id: 'squid_bait',    name: 'Squid Bait',    price: 60,   preferredFish: ['tuna', 'sea_bass', 'shark'],           rarityBonus: 10,  description: 'Cumi-cumi laut.' },
+    { id: 'lure_bait',     name: 'Lure Bait',     price: 80,   preferredFish: ['bass', 'pike', 'salmon'],              rarityBonus: 8,   description: 'Umpan tiruan yang mengkilap.' },
+    { id: 'golden_lure',   name: 'Golden Lure',   price: 200,  preferredFish: ['golden_carp', 'crystal_koi', 'moon_whisker'], rarityBonus: 25, description: 'Umpan emas langka.' },
+    { id: 'bread_bait',    name: 'Bread Bait',    price: 5,    preferredFish: ['common_carp', 'minnow'],               rarityBonus: 0,   description: 'Roti tawar sederhana.' },
+];
+var baitData;
+
+const boatData = [
+    { id: 'none',            name: 'No Boat',          speed: 0,   unlockSpot: ['village_pond', 'river', 'lake', 'waterfall', 'beach'], price: 0,     description: 'Tidak menggunakan perahu.' },
+    { id: 'rowing_boat',     name: 'Rowing Boat',      speed: 5,   unlockSpot: ['ocean'],                                 price: 3000,  description: 'Perahu dayung untuk laut tenang.' },
+    { id: 'sailing_boat',    name: 'Sailing Boat',     speed: 10,  unlockSpot: ['ocean', 'deep_ocean'],                   price: 10000, description: 'Perahu layar untuk laut lepas.' },
+    { id: 'fishing_trawler', name: 'Fishing Trawler',  speed: 15,  unlockSpot: ['deep_ocean', 'volcano_lake'],             price: 30000, description: 'Kapal penangkap ikan profesional.' },
+    { id: 'mystic_boat',     name: 'Mystic Boat',      speed: 20,  unlockSpot: ['crystal_lake'],                          price: 80000, description: 'Perahu mistis yang bisa menembus kabut.' },
+];
+var boatData;
+
+const currencyData = [
+    { id: 'gold',            name: 'Gold',            icon: '🪙', description: 'Mata uang utama.',           canTrade: true },
+    { id: 'diamond',         name: 'Diamond',         icon: '💎', description: 'Mata uang premium.',          canTrade: false },
+    { id: 'hfish',           name: '$HFISH',          icon: '🐟', description: 'Token blockchain (belum aktif).', canTrade: false },
+    { id: 'ancient_pearl',   name: 'Ancient Pearl',   icon: '🔮', description: 'Mutlak kuno dari laut dalam.', canTrade: true },
+    { id: 'fishing_point',   name: 'Fishing Point',   icon: '⭐', description: 'Poin dari menyelesaikan quest.', canTrade: false },
+];
+var currencyData;
+
+/**
+ * fishData.js - Database seluruh ikan
+ * preferredBait harus menggunakan ID dari baitData.js
+ */
+const fishData = [
+    // ==================== COMMON ====================
+    {
+        id: 'common_carp',
+        name: 'Common Carp',
+        rarity: 'common',
+        price: 10,
+        minWeight: 0.2,
+        maxWeight: 3.0,
+        preferredBait: ['worm_bait', 'bread_bait'],
+        preferredWeather: ['sunny', 'cloudy'],
+        preferredSeason: ['spring', 'summer'],
+        preferredTime: ['morning', 'afternoon'],
+        location: ['village_pond', 'river'],
+        description: 'Ikan karper biasa, mudah ditangkap.',
+        image: null,
+        unlockLevel: 1,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'catfish',
+        name: 'Catfish',
+        rarity: 'common',
+        price: 15,
+        minWeight: 0.5,
+        maxWeight: 5.0,
+        preferredBait: ['worm_bait', 'shrimp_bait'],
+        preferredWeather: ['cloudy', 'rain'],
+        preferredSeason: ['summer', 'autumn'],
+        preferredTime: ['night', 'evening'],
+        location: ['river', 'lake'],
+        description: 'Ikan lele yang suka bersembunyi di lumpur.',
+        image: null,
+        unlockLevel: 1,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'bluegill',
+        name: 'Bluegill',
+        rarity: 'common',
+        price: 12,
+        minWeight: 0.1,
+        maxWeight: 1.5,
+        preferredBait: ['worm_bait', 'cricket_bait'],
+        preferredWeather: ['sunny'],
+        preferredSeason: ['spring', 'summer'],
+        preferredTime: ['morning', 'afternoon'],
+        location: ['village_pond'],
+        description: 'Ikan kecil berwarna biru.',
+        image: null,
+        unlockLevel: 1,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'minnow',
+        name: 'Minnow',
+        rarity: 'common',
+        price: 5,
+        minWeight: 0.02,
+        maxWeight: 0.2,
+        preferredBait: ['worm_bait'],
+        preferredWeather: ['sunny', 'cloudy'],
+        preferredSeason: ['spring', 'summer', 'autumn'],
+        preferredTime: ['morning', 'afternoon', 'evening'],
+        location: ['village_pond', 'river'],
+        description: 'Ikan kecil yang bergerombol.',
+        image: null,
+        unlockLevel: 1,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+
+    // ==================== UNCOMMON ====================
+    {
+        id: 'trout',
+        name: 'Trout',
+        rarity: 'uncommon',
+        price: 35,
+        minWeight: 0.3,
+        maxWeight: 4.0,
+        preferredBait: ['worm_bait', 'cricket_bait', 'lure_bait'],
+        preferredWeather: ['sunny', 'cloudy'],
+        preferredSeason: ['spring', 'autumn'],
+        preferredTime: ['morning'],
+        location: ['river', 'waterfall'],
+        description: 'Ikan trout yang gesit.',
+        image: null,
+        unlockLevel: 3,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'bass',
+        name: 'Bass',
+        rarity: 'uncommon',
+        price: 45,
+        minWeight: 0.5,
+        maxWeight: 6.0,
+        preferredBait: ['lure_bait', 'shrimp_bait'],
+        preferredWeather: ['sunny', 'cloudy'],
+        preferredSeason: ['summer'],
+        preferredTime: ['morning', 'afternoon'],
+        location: ['lake', 'river'],
+        description: 'Ikan bass yang populer di kalangan pemancing.',
+        image: null,
+        unlockLevel: 5,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'salmon',
+        name: 'Salmon',
+        rarity: 'uncommon',
+        price: 50,
+        minWeight: 1.0,
+        maxWeight: 8.0,
+        preferredBait: ['lure_bait', 'shrimp_bait'],
+        preferredWeather: ['rain'],
+        preferredSeason: ['autumn'],
+        preferredTime: ['morning', 'evening'],
+        location: ['river', 'waterfall'],
+        description: 'Ikan salmon yang bermigrasi.',
+        image: null,
+        unlockLevel: 5,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'flounder',
+        name: 'Flounder',
+        rarity: 'uncommon',
+        price: 40,
+        minWeight: 0.3,
+        maxWeight: 3.0,
+        preferredBait: ['worm_bait', 'shrimp_bait'],
+        preferredWeather: ['cloudy'],
+        preferredSeason: ['autumn', 'winter'],
+        preferredTime: ['evening', 'night'],
+        location: ['beach'],
+        description: 'Ikan pipih yang bersembunyi di pasir.',
+        image: null,
+        unlockLevel: 8,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+
+    // ==================== RARE ====================
+    {
+        id: 'tuna',
+        name: 'Tuna',
+        rarity: 'rare',
+        price: 120,
+        minWeight: 3.0,
+        maxWeight: 25.0,
+        preferredBait: ['lure_bait', 'squid_bait'],
+        preferredWeather: ['sunny'],
+        preferredSeason: ['summer'],
+        preferredTime: ['morning', 'afternoon'],
+        location: ['ocean'],
+        description: 'Ikan tuna raksasa dari laut lepas.',
+        image: null,
+        unlockLevel: 18,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'pike',
+        name: 'Pike',
+        rarity: 'rare',
+        price: 100,
+        minWeight: 2.0,
+        maxWeight: 15.0,
+        preferredBait: ['lure_bait', 'shrimp_bait'],
+        preferredWeather: ['cloudy', 'rain'],
+        preferredSeason: ['autumn', 'winter'],
+        preferredTime: ['morning', 'evening'],
+        location: ['river', 'lake'],
+        description: 'Ikan predator yang agresif.',
+        image: null,
+        unlockLevel: 10,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'sturgeon',
+        name: 'Sturgeon',
+        rarity: 'rare',
+        price: 150,
+        minWeight: 5.0,
+        maxWeight: 30.0,
+        preferredBait: ['worm_bait', 'shrimp_bait'],
+        preferredWeather: ['cloudy'],
+        preferredSeason: ['spring', 'autumn'],
+        preferredTime: ['morning', 'afternoon'],
+        location: ['river', 'lake', 'volcano_lake'],
+        description: 'Ikan purba yang hidup di perairan dalam.',
+        image: null,
+        unlockLevel: 12,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'sea_bass',
+        name: 'Sea Bass',
+        rarity: 'rare',
+        price: 90,
+        minWeight: 1.0,
+        maxWeight: 12.0,
+        preferredBait: ['lure_bait', 'squid_bait'],
+        preferredWeather: ['sunny', 'cloudy'],
+        preferredSeason: ['summer', 'autumn'],
+        preferredTime: ['morning', 'evening'],
+        location: ['ocean', 'beach'],
+        description: 'Ikan bass laut yang lezat.',
+        image: null,
+        unlockLevel: 10,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+
+    // ==================== EPIC ====================
+    {
+        id: 'golden_carp',
+        name: 'Golden Carp',
+        rarity: 'epic',
+        price: 500,
+        minWeight: 2.0,
+        maxWeight: 10.0,
+        preferredBait: ['golden_lure'],
+        preferredWeather: ['sunny'],
+        preferredSeason: ['spring'],
+        preferredTime: ['morning'],
+        location: ['crystal_lake'],
+        description: 'Ikan karper emas yang bersinar.',
+        image: null,
+        unlockLevel: 20,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'crystal_koi',
+        name: 'Crystal Koi',
+        rarity: 'epic',
+        price: 800,
+        minWeight: 1.5,
+        maxWeight: 8.0,
+        preferredBait: ['golden_lure'],
+        preferredWeather: ['fog'],
+        preferredSeason: ['winter'],
+        preferredTime: ['night'],
+        location: ['crystal_lake'],
+        description: 'Ikan koi kristal yang transparan.',
+        image: null,
+        unlockLevel: 25,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'eel',
+        name: 'Eel',
+        rarity: 'epic',
+        price: 150,
+        minWeight: 0.5,
+        maxWeight: 5.0,
+        preferredBait: ['worm_bait', 'shrimp_bait'],
+        preferredWeather: ['rain', 'storm'],
+        preferredSeason: ['autumn', 'winter'],
+        preferredTime: ['night'],
+        location: ['river', 'deep_lake'],
+        description: 'Ikan belut yang licin dan sulit ditangkap.',
+        image: null,
+        unlockLevel: 12,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+
+    // ==================== LEGENDARY ====================
+    {
+        id: 'dragon_fish',
+        name: 'Dragon Fish',
+        rarity: 'legendary',
+        price: 2000,
+        minWeight: 5.0,
+        maxWeight: 30.0,
+        preferredBait: ['golden_lure'],
+        preferredWeather: ['storm'],
+        preferredSeason: ['winter'],
+        preferredTime: ['night'],
+        location: ['deep_ocean', 'volcano_lake'],
+        description: 'Ikan naga legendaris yang sangat langka.',
+        image: null,
+        unlockLevel: 30,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'moon_whisker',
+        name: 'Moon Whisker',
+        rarity: 'legendary',
+        price: 3000,
+        minWeight: 3.0,
+        maxWeight: 15.0,
+        preferredBait: ['golden_lure'],
+        preferredWeather: ['fog'],
+        preferredSeason: ['winter'],
+        preferredTime: ['night'],
+        location: ['crystal_lake'],
+        description: 'Ikan mistis yang hanya muncul di bulan purnama.',
+        image: null,
+        unlockLevel: 35,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+    {
+        id: 'shark',
+        name: 'Shark',
+        rarity: 'legendary',
+        price: 2500,
+        minWeight: 10.0,
+        maxWeight: 80.0,
+        preferredBait: ['squid_bait', 'golden_lure'],
+        preferredWeather: ['sunny', 'cloudy'],
+        preferredSeason: ['summer'],
+        preferredTime: ['morning', 'afternoon'],
+        location: ['deep_ocean'],
+        description: 'Hiu raksasa dari laut dalam.',
+        image: null,
+        unlockLevel: 28,
+        isBoss: false,
+        isMutation: false,
+        isSecret: false,
+    },
+
+    // ==================== BOSS ====================
+    {
+        id: 'kraken',
+        name: 'Kraken',
+        rarity: 'legendary',
+        price: 10000,
+        minWeight: 50.0,
+        maxWeight: 200.0,
+        preferredBait: ['golden_lure'],
+        preferredWeather: ['storm'],
+        preferredSeason: ['winter'],
+        preferredTime: ['night'],
+        location: ['deep_ocean'],
+        description: 'Monster laut yang mengerikan.',
+        image: null,
+        unlockLevel: 40,
+        isBoss: true,
+        isMutation: false,
+        isSecret: false,
+    },
+
+    // ==================== SECRET ====================
+    {
+        id: 'ghost_fish',
+        name: 'Ghost Fish',
+        rarity: 'legendary',
+        price: 5000,
+        minWeight: 0.5,
+        maxWeight: 2.0,
+        preferredBait: ['worm_bait'],
+        preferredWeather: ['fog'],
+        preferredSeason: ['autumn'],
+        preferredTime: ['night'],
+        location: ['river'],
+        description: 'Ikan hantu yang hanya terlihat di kabut.',
+        image: null,
+        unlockLevel: 1,
+        isBoss: false,
+        isMutation: false,
+        isSecret: true,
+    },
+];
+
+var fishData;
+
+const hookData = [
+    { id: 'basic_hook',  name: 'Basic Hook',  price: 0,    catchRate: 50,  durability: 50,  description: 'Kail dasar.' },
+    { id: 'iron_hook',   name: 'Iron Hook',   price: 200,  catchRate: 60,  durability: 80,  description: 'Kail besi yang kuat.' },
+    { id: 'steel_hook',  name: 'Steel Hook',  price: 600,  catchRate: 70,  durability: 120, description: 'Kail baja tajam.' },
+    { id: 'gold_hook',   name: 'Gold Hook',   price: 1500, catchRate: 80,  durability: 100, description: 'Kail emas yang menarik ikan langka.' },
+    { id: 'diamond_hook',name: 'Diamond Hook', price: 5000, catchRate: 90,  durability: 200, description: 'Kail berlian yang hampir tidak bisa patah.' },
+];
+var hookData;
+
+const itemData = [
+    { id: 'health_potion', name: 'Health Potion', category: 'consumable', price: 50, description: 'Restore 50 HP.' },
+    { id: 'luck_charm', name: 'Luck Charm', category: 'accessory', price: 500, description: 'Increase luck by 10%.' },
+    { id: 'treasure_map', name: 'Treasure Map', category: 'special', price: 200, description: 'Reveals a hidden spot.' },
+];
+var itemData;
+
+const museumData = [
+    { id: 'donate_common', name: 'Common Exhibit', fishRequired: 'common_carp', reward: { museumPoint: 10, title: null, decoration: null } },
+    { id: 'donate_rare', name: 'Rare Exhibit', fishRequired: 'tuna', reward: { museumPoint: 50, title: 'Ocean Expert', decoration: 'Trophy Fish' } },
+    { id: 'donate_legendary', name: 'Legendary Exhibit', fishRequired: 'dragon_fish', reward: { museumPoint: 200, title: 'Dragon Tamer', decoration: 'Dragon Statue' } },
+];
+var museumData;
+
+const npcData = [
+    { id: 'old_fisher', name: 'Old Fisher Tom', role: 'guide', location: 'village_pond', dialogue: 'Welcome, young angler!' },
+    { id: 'shop_owner', name: 'Bait Betty', role: 'shopkeeper', location: 'village_pond', dialogue: 'Need bait? I got you covered!' },
+    { id: 'museum_guard', name: 'Guard Marcus', role: 'museum', location: 'village_pond', dialogue: 'The museum is open to collectors.' },
+];
+var npcData;
+
+const rarityData = {
+    common:    { name: 'Common',    color: 0xaaaaaa, dropWeight: 50, glowColor: 0x000000 },
+    uncommon:  { name: 'Uncommon',  color: 0x55cc55, dropWeight: 30, glowColor: 0x000000 },
+    rare:      { name: 'Rare',      color: 0x5599ff, dropWeight: 15, glowColor: 0x3344ff },
+    epic:      { name: 'Epic',      color: 0xaa55ff, dropWeight: 4,  glowColor: 0x7733cc },
+    legendary: { name: 'Legendary', color: 0xffaa00, dropWeight: 1,  glowColor: 0xffaa00 },
+};
+var rarityData;
+
+const restaurantData = [
+    { id: 'order_1', name: 'Fresh Carp', fishRequired: 'common_carp', amount: 5, reward: { gold: 100, exp: 50, diamond: 0 }, description: 'Ikan karper segar untuk sup.' },
+    { id: 'order_2', name: 'Sushi Platter', fishRequired: 'tuna', amount: 3, reward: { gold: 500, exp: 200, diamond: 2 }, description: 'Tuna segar untuk sushi.' },
+    { id: 'order_3', name: 'Royal Feast', fishRequired: 'golden_carp', amount: 1, reward: { gold: 2000, exp: 1000, diamond: 10 }, description: 'Hidangan mewah untuk raja.' },
+];
+var restaurantData;
+
+const rodData = [
+    { id: 'wood_rod',       name: 'Wood Rod',       level: 1,  price: 0,     durability: 100, luckBonus: 0,  speedBonus: 0,  description: 'Joran kayu sederhana untuk pemula.' },
+    { id: 'bamboo_rod',     name: 'Bamboo Rod',     level: 3,  price: 500,   durability: 150, luckBonus: 5,  speedBonus: 2,  description: 'Joran bambu yang ringan dan lentur.' },
+    { id: 'fiberglass_rod', name: 'Fiberglass Rod', level: 8,  price: 2000,  durability: 250, luckBonus: 10, speedBonus: 5,  description: 'Joran fiberglass modern.' },
+    { id: 'carbon_rod',     name: 'Carbon Rod',     level: 15, price: 8000,  durability: 400, luckBonus: 20, speedBonus: 10, description: 'Joran karbon premium.' },
+    { id: 'titanium_rod',   name: 'Titanium Rod',   level: 25, price: 25000, durability: 600, luckBonus: 35, speedBonus: 18, description: 'Joran titanium yang hampir tidak bisa patah.' },
+    { id: 'legendary_rod',  name: 'Legendary Rod',  level: 35, price: 80000, durability: 999, luckBonus: 50, speedBonus: 25, description: 'Joran legendaris dari zaman kuno.' },
+];
+var rodData;
+
+const seasonData = [
+    { id: 'spring', name: 'Spring', bonusType: 'common',    bonus: 1.2, description: 'Musim semi. Banyak ikan kecil.' },
+    { id: 'summer', name: 'Summer', bonusType: 'all',       bonus: 1.1, description: 'Musim panas. Semua ikan aktif.' },
+    { id: 'autumn', name: 'Autumn', bonusType: 'uncommon',  bonus: 1.3, description: 'Musim gugur. Ikan menyiapkan musim dingin.' },
+    { id: 'winter', name: 'Winter', bonusType: 'rare',      bonus: 1.5, description: 'Musim dingin. Ikan langka lebih mudah.' },
+];
+var seasonData;
+
+const settingsData = {
+    musicVolume: { default: 100, min: 0, max: 100 },
+    sfxVolume: { default: 100, min: 0, max: 100 },
+    language: { default: 'english', options: ['english', 'indonesian'] },
+    screenShake: { default: true },
+    autoSave: { default: true },
+};
+var settingsData;
+
+const spotData = [
+    {
+        id: 'village_pond',
+        name: 'Village Pond',
+        unlockLevel: 1,
+        diamondRequired: 0,
+        background: 'bg_village_pond',
+        music: 'music_village_pond',
+        fishPool: ['common_carp', 'bluegill', 'minnow', 'catfish'],
+        boatRequired: null,
+        description: 'Kolam tenang di tengah desa.',
+        weatherAvailable: ['sunny', 'cloudy', 'rain'],
+    },
+    {
+        id: 'river',
+        name: 'River',
+        unlockLevel: 3,
+        diamondRequired: 0,
+        background: 'bg_river',
+        music: 'music_river',
+        fishPool: ['common_carp', 'catfish', 'trout', 'salmon', 'pike'],
+        boatRequired: null,
+        description: 'Sungai dengan arus sedang.',
+        weatherAvailable: ['sunny', 'cloudy', 'rain', 'storm'],
+    },
+    {
+        id: 'lake',
+        name: 'Lake',
+        unlockLevel: 6,
+        diamondRequired: 0,
+        background: 'bg_lake',
+        music: 'music_lake',
+        fishPool: ['bass', 'trout', 'catfish', 'pike', 'sturgeon'],
+        boatRequired: null,
+        description: 'Danau luas yang tenang.',
+        weatherAvailable: ['sunny', 'cloudy', 'rain', 'fog'],
+    },
+    {
+        id: 'waterfall',
+        name: 'Waterfall',
+        unlockLevel: 10,
+        diamondRequired: 50,
+        background: 'bg_waterfall',
+        music: 'music_waterfall',
+        fishPool: ['trout', 'salmon', 'sturgeon'],
+        boatRequired: null,
+        description: 'Air terjun dengan ikan yang gesit.',
+        weatherAvailable: ['sunny', 'cloudy', 'rain'],
+    },
+    {
+        id: 'beach',
+        name: 'Beach',
+        unlockLevel: 12,
+        diamondRequired: 100,
+        background: 'bg_beach',
+        music: 'music_beach',
+        fishPool: ['flounder', 'sea_bass', 'bluegill'],
+        boatRequired: null,
+        description: 'Pantai berpasir dengan ombak tenang.',
+        weatherAvailable: ['sunny', 'cloudy', 'rain', 'storm', 'fog'],
+    },
+    {
+        id: 'ocean',
+        name: 'Ocean',
+        unlockLevel: 18,
+        diamondRequired: 200,
+        background: 'bg_ocean',
+        music: 'music_ocean',
+        fishPool: ['tuna', 'sea_bass', 'flounder', 'shark'],
+        boatRequired: 'sailing_boat',
+        description: 'Laut lepas dengan ikan besar.',
+        weatherAvailable: ['sunny', 'cloudy', 'rain', 'storm'],
+    },
+    {
+        id: 'deep_ocean',
+        name: 'Deep Ocean',
+        unlockLevel: 28,
+        diamondRequired: 500,
+        background: 'bg_deep_ocean',
+        music: 'music_deep_ocean',
+        fishPool: ['tuna', 'shark', 'kraken', 'dragon_fish'],
+        boatRequired: 'fishing_trawler',
+        description: 'Laut dalam yang gelap dan berbahaya.',
+        weatherAvailable: ['sunny', 'cloudy', 'storm', 'fog'],
+    },
+    {
+        id: 'volcano_lake',
+        name: 'Volcano Lake',
+        unlockLevel: 30,
+        diamondRequired: 800,
+        background: 'bg_volcano_lake',
+        music: 'music_volcano_lake',
+        fishPool: ['dragon_fish', 'pike', 'sturgeon'],
+        boatRequired: 'fishing_trawler',
+        description: 'Danau vulkanik dengan air panas.',
+        weatherAvailable: ['sunny', 'cloudy', 'storm'],
+    },
+    {
+        id: 'crystal_lake',
+        name: 'Crystal Lake',
+        unlockLevel: 35,
+        diamondRequired: 1000,
+        background: 'bg_crystal_lake',
+        music: 'music_crystal_lake',
+        fishPool: ['golden_carp', 'crystal_koi', 'moon_whisker', 'ghost_fish'],
+        boatRequired: 'mystic_boat',
+        description: 'Danau kristal yang bersinar.',
+        weatherAvailable: ['sunny', 'cloudy', 'fog'],
+    },
+];
+
+var spotData;
+
+const titleData = [
+    { id: 'new_fisher', name: 'New Fisher', description: 'Start your journey.', requirement: 'none', bonus: {} },
+    { id: 'river_master', name: 'River Master', description: 'Catch 50 fish in rivers.', requirement: 'catch_50_river', bonus: { luck: 5 } },
+    { id: 'ocean_hunter', name: 'Ocean Hunter', description: 'Catch 30 fish in the ocean.', requirement: 'catch_30_ocean', bonus: { speed: 5 } },
+    { id: 'legend_fisher', name: 'Legend Fisher', description: 'Catch a legendary fish.', requirement: 'catch_legendary', bonus: { luck: 15 } },
+    { id: 'treasure_hunter', name: 'Treasure Hunter', description: 'Find 10 secret fish.', requirement: 'find_10_secret', bonus: { gold_find: 20 } },
+    { id: 'night_owl', name: 'Night Owl', description: 'Catch 20 fish at night.', requirement: 'catch_20_night', bonus: { night_bonus: 10 } },
+];
+var titleData;
+
+const weatherData = [
+    { id: 'sunny', name: 'Sunny',  modifier: 1.0,  bonusFish: [],                    description: 'Cerah terang. Kondisi normal.' },
+    { id: 'cloudy', name: 'Cloudy', modifier: 0.9,  bonusFish: ['catfish', 'trout'],  description: 'Mendung. Ikan air tawar lebih aktif.' },
+    { id: 'rain',   name: 'Rain',   modifier: 1.3,  bonusFish: ['trout', 'salmon', 'pike'], description: 'Hujan. Ikan predator aktif.' },
+    { id: 'storm',  name: 'Storm',  modifier: 0.6,  bonusFish: ['dragon_fish', 'kraken'], description: 'Badai. Berbahaya tapi menguntungkan.' },
+    { id: 'fog',    name: 'Fog',    modifier: 1.1,  bonusFish: ['ghost_fish', 'crystal_koi', 'moon_whisker'], description: 'Kabut tebal. Ikan mistis muncul.' },
+];
+var weatherData;
+
+
+
+// ===== CONFIG =====
+{
+    type: Phaser.AUTO,
+    width: 640,
+    height: 960,
+    parent: 'game-container',
+    backgroundColor: '#1a2a3a',
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    input: {
+        activePointers: 2,
+    },
+    scene: [],
+};
+
+
+// ===== MANAGERS =====
+/**
+ * SaveManager - Menyimpan dan memuat data pemain via LocalStorage
+ */
+const SAVE_KEY = 'holdfish_save';
+
+class SaveManager {
+
+    /**
+     * Buat data pemain baru
+     */
+    static createPlayer({ name, gender, avatar }) {
+        const now = new Date().toISOString();
+        const player = {
+            character: {
+                name,
+                gender,
+                avatar,
+            },
+            progress: {
+                level: 1,
+                exp: 0,
+            },
+            currency: {
+                gold: 500,
+                diamond: 0,
+                hfish: 0,
+            },
+            equipment: {
+                rod: 'wood_rod',
+                hook: 'basic_hook',
+                bait: 'worm_bait',
+                baitAmount: 20,
+                boat: null,
+            },
+            location: {
+                currentSpot: 'village_pond',
+            },
+            inventory: [],
+            fishCollection: [],
+            achievements: [],
+            unlockedSpots: ['village_pond'],
+            stats: {
+                totalFish: 0,
+                biggestFish: 0,
+                playTime: 0,
+            },
+            settings: {
+                musicVolume: 100,
+                sfxVolume: 100,
+                language: 'english',
+            },
+            meta: {
+                tutorialFinished: false,
+                createdDate: now,
+                lastLogin: now,
+            },
+        };
+        return player;
+    }
+
+    /**
+     * Simpan data ke LocalStorage
+     */
+    static save(playerData) {
+        try {
+            playerData.meta.lastLogin = new Date().toISOString();
+            localStorage.setItem(SAVE_KEY, JSON.stringify(playerData));
+            return true;
+        } catch (e) {
+            console.warn('[SaveManager] Gagal save:', e);
+            return false;
+        }
+    }
+
+    /**
+     * Muat data dari LocalStorage
+     */
+    static load() {
+        try {
+            const raw = localStorage.getItem(SAVE_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (e) {
+            console.warn('[SaveManager] Gagal load:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Hapus data save
+     */
+    static deleteSave() {
+        localStorage.removeItem(SAVE_KEY);
+    }
+
+    /**
+     * Cek apakah ada data save
+     */
+    static hasSave() {
+        return localStorage.getItem(SAVE_KEY) !== null;
+    }
+}
+
+/**
+ * PlayerManager - Mengelola data pemain aktif
+ */
+
+class PlayerManager {
+
+    constructor() { this._data = null; }
+
+    getData()     { return this._data; }
+    load()        { this._data = SaveManager.load(); return this._data; }
+    save()        { if (this._data) SaveManager.save(this._data); }
+    hasData()     { return this._data !== null; }
+
+    // ==================== IDENTITY ====================
+    getName()     { return this._data?.character?.name ?? ''; }
+    getGender()   { return this._data?.character?.gender ?? 'male'; }
+    getAvatar()   { return this._data?.character?.avatar ?? 0; }
+
+    // ==================== PROGRESS ====================
+    getLevel()    { return this._data?.progress?.level ?? 1; }
+    getExp()      { return this._data?.progress?.exp ?? 0; }
+    addExp(amount) {
+        this._data.progress.exp += amount;
+        const needed = this._data.progress.level * 100;
+        while (this._data.progress.exp >= needed) {
+            this._data.progress.exp -= needed;
+            this._data.progress.level++;
+        }
+        this.save();
+    }
+
+    // ==================== CURRENCY ====================
+    getGold()     { return this._data?.currency?.gold ?? 0; }
+    getDiamond()  { return this._data?.currency?.diamond ?? 0; }
+    getHfish()    { return this._data?.currency?.hfish ?? 0; }
+    addGold(amount)    { this._data.currency.gold += amount; this.save(); }
+    addDiamond(amount) { this._data.currency.diamond += amount; this.save(); }
+
+    // ==================== EQUIPMENT ====================
+    getRod()        { return this._data?.equipment?.rod ?? ''; }
+    getHook()       { return this._data?.equipment?.hook ?? ''; }
+    getBait()       { return this._data?.equipment?.bait ?? ''; }
+    getBaitAmount() { return this._data?.equipment?.baitAmount ?? 0; }
+    getBoat()       { return this._data?.equipment?.boat ?? null; }
+    useBait() {
+        if (this._data.equipment.baitAmount > 0) {
+            this._data.equipment.baitAmount--;
+            this.save();
+            return true;
+        }
+        return false;
+    }
+    addBait(baitId, amount) {
+        if (this._data.equipment.bait === baitId) {
+            this._data.equipment.baitAmount += amount;
+        } else {
+            this._data.equipment.bait = baitId;
+            this._data.equipment.baitAmount = amount;
+        }
+        this.save();
+    }
+    setHook(hookId) {
+        this._data.equipment.hook = hookId;
+        this.save();
+    }
+    setRod(rodId) {
+        this._data.equipment.rod = rodId;
+        this.save();
+    }
+
+    // ==================== OWNED ITEMS ====================
+    getOwnedRods()  { return this._data?.rods ?? ['wood_rod']; }
+    getOwnedHooks() { return this._data?.hooks ?? ['basic_hook']; }
+    addOwnedRod(rodId) {
+        if (!this._data.rods) this._data.rods = ['wood_rod'];
+        if (!this._data.rods.includes(rodId)) this._data.rods.push(rodId);
+        this.save();
+    }
+    addOwnedHook(hookId) {
+        if (!this._data.hooks) this._data.hooks = ['basic_hook'];
+        if (!this._data.hooks.includes(hookId)) this._data.hooks.push(hookId);
+        this.save();
+    }
+
+    // ==================== LOCATION ====================
+    getCurrentSpot() { return this._data?.location?.currentSpot ?? ''; }
+    setCurrentSpot(spotId) { this._data.location.currentSpot = spotId; this.save(); }
+
+    // ==================== INVENTORY ====================
+    getInventory()  { return this._data?.inventory ?? []; }
+    addToInventory(item) {
+        if (!this._data.inventory) this._data.inventory = [];
+        this._data.inventory.push(item);
+        this.save();
+    }
+    removeFromInventory(index) {
+        this._data.inventory.splice(index, 1);
+        this.save();
+    }
+
+    // ==================== FISH COLLECTION ====================
+    getCollection() { return this._data?.fishCollection ?? []; }
+    addToCollection(fishId, weight) {
+        if (!this._data.fishCollection) this._data.fishCollection = [];
+        const existing = this._data.fishCollection.find(c => c.id === fishId);
+        if (existing) {
+            existing.caught++;
+            if (weight > existing.biggestWeight) existing.biggestWeight = weight;
+            existing.lastCaught = new Date().toISOString();
+        } else {
+            this._data.fishCollection.push({
+                id: fishId,
+                caught: 1,
+                biggestWeight: weight,
+                firstCaught: new Date().toISOString(),
+                lastCaught: new Date().toISOString(),
+            });
+        }
+        this.save();
+    }
+    isNewSpecies(fishId) {
+        return !this._data.fishCollection?.some(c => c.id === fishId);
+    }
+
+    // ==================== STATS ====================
+    getStats()      { return this._data?.stats ?? {}; }
+    addFishStat(weight) {
+        this._data.stats.totalFish++;
+        if (weight > this._data.stats.biggestFish) this._data.stats.biggestFish = weight;
+        this.save();
+    }
+
+    // ==================== SPOTS ====================
+    getUnlockedSpots() { return this._data?.unlockedSpots ?? []; }
+
+    // ==================== SETTINGS ====================
+    getSettings()   { return this._data?.settings ?? {}; }
+}
+
+/**
+ * InventoryManager - Mengelola seluruh inventory pemain
+ */
+
+class InventoryManager {
+
+    // ==================== FISH ====================
+
+    static getAllFish() {
+        return PlayerManager.getInventory().filter(i => i.type === 'fish');
+    }
+
+    static addFish(fishData, weight) {
+        PlayerManager.addToInventory({
+            type: 'fish',
+            fishId: fishData.id,
+            name: fishData.name,
+            rarity: fishData.rarity,
+            weight,
+            price: fishData.price,
+            caughtAt: new Date().toISOString(),
+            favorite: false,
+            spot: PlayerManager.getCurrentSpot(),
+        });
+    }
+
+    static removeFish(index) {
+        const allFish = this.getAllFish();
+        const inv = PlayerManager.getInventory();
+        const realIndex = inv.indexOf(allFish[index]);
+        if (realIndex !== -1) PlayerManager.removeFromInventory(realIndex);
+    }
+
+    static favoriteFish(index) {
+        const allFish = this.getAllFish();
+        const inv = PlayerManager.getInventory();
+        const realIndex = inv.indexOf(allFish[index]);
+        if (realIndex !== -1) {
+            inv[realIndex].favorite = !inv[realIndex].favorite;
+            PlayerManager.save();
+        }
+    }
+
+    static getFishByRarity(rarity) {
+        return this.getAllFish().filter(f => f.rarity === rarity);
+    }
+
+    static getLargestFish() {
+        const allFish = this.getAllFish();
+        if (allFish.length === 0) return null;
+        return allFish.reduce((max, f) => f.weight > max.weight ? f : max, allFish[0]);
+    }
+
+    static searchFish(query) {
+        const q = query.toLowerCase();
+        return this.getAllFish().filter(f => f.name.toLowerCase().includes(q));
+    }
+
+    static sortFish(fishList, sortBy) {
+        const sorted = [...fishList];
+        switch (sortBy) {
+            case 'newest':      sorted.sort((a, b) => new Date(b.caughtAt) - new Date(a.caughtAt)); break;
+            case 'oldest':      sorted.sort((a, b) => new Date(a.caughtAt) - new Date(b.caughtAt)); break;
+            case 'highestPrice': sorted.sort((a, b) => b.price - a.price); break;
+            case 'lowestPrice':  sorted.sort((a, b) => a.price - b.price); break;
+            case 'largestWeight': sorted.sort((a, b) => b.weight - a.weight); break;
+            case 'smallestWeight': sorted.sort((a, b) => a.weight - b.weight); break;
+            case 'nameAZ':      sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
+            case 'nameZA':      sorted.sort((a, b) => b.name.localeCompare(a.name)); break;
+        }
+        return sorted;
+    }
+
+    // ==================== BAIT ====================
+
+    static getBaitInventory() {
+        return PlayerManager.getData().equipment;
+    }
+
+    // ==================== HOOKS ====================
+
+    static getOwnedHooks() {
+        return PlayerManager.getData().hooks ?? ['basic_hook'];
+    }
+
+    // ==================== RODS ====================
+
+    static getOwnedRods() {
+        return PlayerManager.getData().rods ?? ['wood_rod'];
+    }
+
+    // ==================== COLLECTION ====================
+
+    static getCollection() {
+        return PlayerManager.getCollection();
+    }
+
+    static isCollected(fishId) {
+        return PlayerManager.getCollection().some(c => c.id === fishId);
+    }
+
+    static getCollectionStats() {
+        const allFish = DataManager.getFish();
+        const collected = this.getCollection();
+        const total = allFish.length;
+        const done = collected.length;
+
+        const rarityCount = {};
+        const rarityTotal = {};
+        allFish.forEach(f => {
+            rarityTotal[f.rarity] = (rarityTotal[f.rarity] || 0) + 1;
+        });
+        collected.forEach(c => {
+            const fish = DataManager.getFishByID(c.id);
+            if (fish) rarityCount[fish.rarity] = (rarityCount[fish.rarity] || 0) + 1;
+        });
+
+        return { total, done, rarityCount, rarityTotal };
+    }
+}
+
+/**
+ * MarketManager - Menjual ikan
+ */
+
+class MarketManager {
+
+    /**
+     * Menjual 1 ikan dari inventory berdasarkan index
+     * @returns {{ success: boolean, goldEarned: number, message: string }}
+     */
+    static sellOne(index) {
+        const inv = PlayerManager.getInventory();
+        if (index < 0 || index >= inv.length) {
+            return { success: false, goldEarned: 0, message: 'Invalid item.' };
+        }
+        const item = inv[index];
+        const fishData = DataManager.getFishByID(item.fishId);
+        if (!fishData) {
+            return { success: false, goldEarned: 0, message: 'Fish data not found.' };
+        }
+        const gold = fishData.price;
+        PlayerManager.removeFromInventory(index);
+        PlayerManager.addGold(gold);
+        return { success: true, goldEarned: gold, message: `Sold ${fishData.name} for 🪙${gold}` };
+    }
+
+    /**
+     * Menjual semua ikan kecuali yang di-favorite
+     * @returns {{ totalGold: number, soldCount: number }}
+     */
+    static sellAll() {
+        let totalGold = 0;
+        let soldCount = 0;
+        const inv = PlayerManager.getInventory();
+        // Sell from end to start to avoid index shifting
+        for (let i = inv.length - 1; i >= 0; i--) {
+            if (inv[i].favorite) continue;
+            const fishData = DataManager.getFishByID(inv[i].fishId);
+            if (fishData) {
+                totalGold += fishData.price;
+                PlayerManager.removeFromInventory(i);
+                soldCount++;
+            }
+        }
+        PlayerManager.addGold(totalGold);
+        return { totalGold, soldCount };
+    }
+}
+
+/**
+ * ShopManager - Membeli umpan dan item
+ */
+
+class ShopManager {
+
+    /**
+     * Membeli umpan
+     * @returns {{ success: boolean, message: string }}
+     */
+    static buyBait(baitId) {
+        const bait = DataManager.getBaitByID(baitId);
+        if (!bait) return { success: false, message: 'Bait not found.' };
+
+        if (PlayerManager.getGold() < bait.price) {
+            return { success: false, message: 'Not enough Gold.' };
+        }
+
+        PlayerManager.addGold(-bait.price);
+        PlayerManager.addBait(baitId, 1);
+        return { success: true, message: `Bought ${bait.name} for 🪙${bait.price}` };
+    }
+
+    /**
+     * Membeli kail
+     */
+    static buyHook(hookId) {
+        const hook = DataManager.getHookByID(hookId);
+        if (!hook) return { success: false, message: 'Hook not found.' };
+        if (PlayerManager.getGold() < hook.price) {
+            return { success: false, message: 'Not enough Gold.' };
+        }
+        PlayerManager.addGold(-hook.price);
+        PlayerManager.setHook(hookId);
+        return { success: true, message: `Bought ${hook.name}` };
+    }
+}
+
+
+// ===== SYSTEMS =====
+/**
+ * FishingSystem - Logika inti memancing
+ * Semua data berasal dari DataManager.
+ */
+
+class FishingSystem {
+
+    /**
+     * Proses memancing. Mengembalikan hasil tangkapan.
+     * @returns {{ success: boolean, fish: object|null, weight: number, isNew: boolean, message: string }}
+     */
+    static processCatch() {
+        const playerData = PlayerManager.getData();
+        const spotId     = playerData.location.currentSpot;
+        const baitId     = playerData.equipment.bait;
+        const hookId     = playerData.equipment.hook;
+        const rodId      = playerData.equipment.rod;
+        const level      = playerData.progress.level;
+
+        // Ambil data dari DataManager
+        const spot  = DataManager.getSpotByID(spotId);
+        const bait  = DataManager.getBaitByID(baitId);
+        const hook  = DataManager.getHookByID(hookId);
+        const rod   = DataManager.getRodByID(rodId);
+        const weather = this._getCurrentWeather();
+        const season  = this._getCurrentSeason();
+        const time    = this._getCurrentTime();
+
+        // 1. Filter ikan berdasarkan Spot
+        let candidates = DataManager.getFish().filter(f => {
+            return f.location.includes(spotId);
+        });
+
+        // 2. Filter berdasarkan Level
+        candidates = candidates.filter(f => f.unlockLevel <= level);
+
+        // 3. Filter berdasarkan Waktu
+        candidates = candidates.filter(f => {
+            return !f.preferredTime || f.preferredTime.includes(time);
+        });
+
+        // 4. Filter berdasarkan Musim
+        candidates = candidates.filter(f => {
+            return !f.preferredSeason || f.preferredSeason.includes(season);
+        });
+
+        // 5. Filter berdasarkan Cuaca
+        candidates = candidates.filter(f => {
+            return !f.preferredWeather || f.preferredWeather.includes(weather);
+        });
+
+        // Jika tidak ada kandidat
+        if (candidates.length === 0) {
+            return { success: false, fish: null, weight: 0, isNew: false, message: 'Nothing was caught.' };
+        }
+
+        // 6. Hitung peluang per ikan (weighted random)
+        const weights = candidates.map(fish => {
+            let w = this._rarityWeight(fish.rarity);
+
+            // Bonus umpan favorit
+            if (bait && fish.preferredBait.includes(baitId)) {
+                w += bait.rarityBonus || 0;
+                w += 20;
+            }
+
+            // Bonus joran
+            if (rod) {
+                w += rod.luckBonus || 0;
+            }
+
+            // Bonus kail
+            if (hook) {
+                w += Math.floor((hook.catchRate - 50) / 5);
+            }
+
+            // Penalty cuaca buruk
+            const weatherData = DataManager.getWeatherByID(weather);
+            if (weatherData) {
+                w = Math.floor(w * weatherData.modifier);
+            }
+
+            // Bonus musim
+            const seasonData = DataManager.getSeasonByID(season);
+            if (seasonData && fish.rarity === seasonData.bonusType) {
+                w = Math.floor(w * seasonData.bonus);
+            }
+
+            return Math.max(w, 1);
+        });
+
+        // 7. Pilih ikan secara acak berdasarkan bobot
+        const chosenFish = this._weightedRandom(candidates, weights);
+
+        // 8. Tentukan ukuran ikan
+        const weight = this._calculateWeight(chosenFish);
+
+        // 9. Cek apakah spesies baru
+        const isNew = PlayerManager.isNewSpecies(chosenFish.id);
+
+        return {
+            success: true,
+            fish: chosenFish,
+            weight,
+            isNew,
+            message: isNew ? 'NEW SPECIES DISCOVERED!' : 'Already collected.',
+        };
+    }
+
+    /**
+     * Bobot dasar berdasarkan rarity
+     */
+    static _rarityWeight(rarity) {
+        const map = { common: 50, uncommon: 30, rare: 15, epic: 4, legendary: 1 };
+        return map[rarity] || 10;
+    }
+
+    /**
+     * Pilih item secara acak berdasarkan bobot
+     */
+    static _weightedRandom(items, weights) {
+        const total = weights.reduce((sum, w) => sum + w, 0);
+        let rand = Math.random() * total;
+        for (let i = 0; i < items.length; i++) {
+            rand -= weights[i];
+            if (rand <= 0) return items[i];
+        }
+        return items[items.length - 1];
+    }
+
+    /**
+     * Hitung berat ikan antara minWeight dan maxWeight
+     */
+    static _calculateWeight(fish) {
+        const min = fish.minWeight || 0.1;
+        const max = fish.maxWeight || 5.0;
+        const raw = min + Math.random() * (max - min);
+        return Math.round(raw * 100) / 100;
+    }
+
+    /**
+     * Waktu dalam game (dummy - nanti dari TimeSystem)
+     */
+    static _getCurrentTime() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 8)  return 'morning';
+        if (hour >= 8 && hour < 17) return 'afternoon';
+        if (hour >= 17 && hour < 20) return 'evening';
+        return 'night';
+    }
+
+    /**
+     * Cuaca dalam game (dummy - nanti dari WeatherSystem)
+     */
+    static _getCurrentWeather() {
+        const weathers = ['sunny', 'cloudy', 'rain', 'fog'];
+        return weathers[Math.floor(Math.random() * weathers.length)];
+    }
+
+    /**
+     * Musim dalam game (dummy - nanti dari SeasonSystem)
+     */
+    static _getCurrentSeason() {
+        const month = new Date().getMonth();
+        if (month >= 2 && month <= 4)  return 'spring';
+        if (month >= 5 && month <= 7)  return 'summer';
+        if (month >= 8 && month <= 10) return 'autumn';
+        return 'winter';
+    }
+}
+
+
+// ===== SCENES =====
+import Phaser from 'phaser';
+
+class BootScene extends Phaser.Scene {
+    constructor() { super({ key: 'BootScene' }); }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+
+        this.add.text(w / 2, h / 2 - 40, '🎣', { fontSize: '64px' }).setOrigin(0.5);
+        this.add.text(w / 2, h / 2 + 30, 'HOLD FISH', {
+            fontSize: '32px', color: '#4ac5ff', fontStyle: 'bold',
+        }).setOrigin(0.5);
+        this.add.text(w / 2, h / 2 + 70, 'Loading...', {
+            fontSize: '16px', color: '#ffffff',
+        }).setOrigin(0.5);
+
+        this.time.delayedCall(1500, () => {
+            if (SaveManager.hasSave()) {
+                this.scene.start('FishingHubScene');
+            } else {
+                this.scene.start('CharacterCreationScene');
+            }
+        });
+    }
+}
+
+import Phaser from 'phaser';
+
+class CharacterCreationScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'CharacterCreationScene' });
+        this.playerName = '';
+        this.selectedGender = 'male';
+        this.selectedAvatar = 0;
+    }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+
+        this.add.text(w / 2, 50, '\uD83C\uDFA3 HOLD FISH', { fontSize: '28px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.add.text(w / 2, 85, 'Create Your Character', { fontSize: '14px', color: '#ffffff' }).setOrigin(0.5);
+
+        // Name input - gunakan DOM input
+        this.add.text(w / 2, 140, 'Character Name', { fontSize: '14px', color: '#cccccc' }).setOrigin(0.5);
+
+        this.nameText = this.add.text(w / 2, 180, 'Tap here to type...', {
+            fontSize: '16px', color: '#888888', backgroundColor: '#2a3a4a',
+            padding: { x: 12, y: 10 }, fixedWidth: 280, align: 'center',
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.nameText.on('pointerdown', () => this._showNameInput());
+
+        // Gender
+        this.add.text(w / 2, 240, 'Gender', { fontSize: '14px', color: '#cccccc' }).setOrigin(0.5);
+        this.maleBtn = this.add.text(w / 2 - 70, 275, '\u2642 Male', {
+            fontSize: '15px', color: '#ffffff', backgroundColor: '#4a9eff',
+            padding: { x: 16, y: 8 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.femaleBtn = this.add.text(w / 2 + 70, 275, '\u2640 Female', {
+            fontSize: '15px', color: '#ffffff', backgroundColor: '#3a4a5a',
+            padding: { x: 16, y: 8 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.maleBtn.on('pointerdown', () => this._setGender('male'));
+        this.femaleBtn.on('pointerdown', () => this._setGender('female'));
+
+        // Avatar
+        this.add.text(w / 2, 340, 'Avatar', { fontSize: '14px', color: '#cccccc' }).setOrigin(0.5);
+        const colors = [0x4ac5ff, 0xff6b6b, 0x51cf66, 0xffd43b];
+        this.avatarBgs = [];
+        [0, 1, 2, 3].forEach((idx) => {
+            const x = w / 2 - 90 + idx * 60;
+            const bg = this.add.rectangle(x, 380, 48, 48, colors[idx], 0.4)
+                .setStrokeStyle(2, idx === 0 ? 0xffffff : 0x555555)
+                .setInteractive({ useHandCursor: true });
+            this.add.text(x, 380, `A${idx + 1}`, { fontSize: '16px', color: '#fff' }).setOrigin(0.5);
+            bg.on('pointerdown', () => {
+                this.selectedAvatar = idx;
+                this.avatarBgs.forEach((b, j) => b.setStrokeStyle(2, j === idx ? 0xffffff : 0x555555));
+            });
+            this.avatarBgs.push(bg);
+        });
+
+        // Error
+        this.errorText = this.add.text(w / 2, 440, '', { fontSize: '13px', color: '#ff6b6b' }).setOrigin(0.5).setAlpha(0);
+
+        // Start button
+        const startBtn = this.add.text(w / 2, 510, '\uD83C\uDFA3  START JOURNEY', {
+            fontSize: '18px', color: '#ffffff', backgroundColor: '#2a7a3a',
+            padding: { x: 24, y: 12 }, fontStyle: 'bold',
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        startBtn.on('pointerdown', () => this._onStart());
+    }
+
+    _showNameInput() {
+        // Buat DOM input element
+        const gameCanvas = this.game.canvas;
+        const rect = gameCanvas.getBoundingClientRect();
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Masukkan nama (3-16)';
+        input.maxLength = 16;
+        input.value = this.playerName;
+        input.style.cssText = `
+            position: fixed;
+            top: ${rect.top + rect.height * 0.17}px;
+            left: ${rect.left + rect.width * 0.15}px;
+            width: ${rect.width * 0.7}px;
+            height: 40px;
+            font-size: 18px;
+            padding: 8px 12px;
+            border: 2px solid #4a9eff;
+            border-radius: 8px;
+            background: #1a2a3a;
+            color: #ffffff;
+            text-align: center;
+            z-index: 1000;
+            outline: none;
+        `;
+
+        document.body.appendChild(input);
+        input.focus();
+
+        const cleanup = () => {
+            if (input.parentNode) {
+                this.playerName = input.value.trim();
+                this.nameText.setText(this.playerName || 'Tap here to type...');
+                this.nameText.setStyle({ color: this.playerName ? '#ffffff' : '#888888' });
+                input.remove();
+            }
+        };
+
+        input.addEventListener('blur', cleanup);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') input.blur();
+        });
+    }
+
+    _setGender(g) {
+        this.selectedGender = g;
+        this.maleBtn.setStyle({ backgroundColor: g === 'male' ? '#4a9eff' : '#3a4a5a' });
+        this.femaleBtn.setStyle({ backgroundColor: g === 'female' ? '#4a9eff' : '#3a4a5a' });
+    }
+
+    _onStart() {
+        if (this.playerName.length < 3) {
+            this.errorText.setText('Nama minimal 3 karakter').setAlpha(1);
+            this.time.delayedCall(2000, () => this.errorText.setAlpha(0));
+            return;
+        }
+
+        const player = SaveManager.createPlayer({
+            name: this.playerName,
+            gender: this.selectedGender,
+            avatar: this.selectedAvatar,
+        });
+        SaveManager.save(player);
+        PlayerManager.load();
+        this.scene.start('FishingHubScene');
+    }
+}
+
+import Phaser from 'phaser';
+
+class FishingHubScene extends Phaser.Scene {
+    constructor() { super({ key: 'FishingHubScene' }); }
+
+    create() {
+        PlayerManager.load();
+
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+
+        this.add.text(w / 2, 24, '🏘️ FISHING HUB', {
+            fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold',
+        }).setOrigin(0.5);
+
+        const pd = PlayerManager.getData();
+        const name = pd?.character?.name ?? 'Fisher';
+        const level = pd?.progress?.level ?? 1;
+        const gold = pd?.currency?.gold ?? 0;
+        const diamond = pd?.currency?.diamond ?? 0;
+        const hfish = pd?.currency?.hfish ?? 0;
+        const baitAmt = pd?.equipment?.baitAmount ?? 0;
+
+        this.add.text(w / 2, 56, `🧑 ${name} Lv.${level}`, {
+            fontSize: '13px', color: '#ffffff',
+        }).setOrigin(0.5);
+        this.add.text(w / 2, 76, `🪙 ${gold}  💎 ${diamond}  🐟 ${hfish}  🪱 ${baitAmt}`, {
+            fontSize: '11px', color: '#cccccc',
+        }).setOrigin(0.5);
+
+        const buildings = [
+            { label: '🎣 Fishing Dock',    scene: 'FishingScene' },
+            { label: '🏪 Fish Market',     scene: 'FishMarketScene' },
+            { label: '🪱 Bait Shop',       scene: 'BaitShopScene' },
+            { label: '🔧 Rod Workshop',    scene: 'RodWorkshopScene' },
+            { label: '⚓ Harbor',           scene: 'HarborScene' },
+            { label: '📖 Fish Book',       scene: 'FishBookScene' },
+            { label: '📦 Inventory',       scene: 'InventoryScene' },
+            { label: '🏛️ Museum',          scene: null },
+            { label: '🍽️ Restaurant',      scene: null },
+            { label: '⚙️ Settings',        scene: 'SettingsScene' },
+        ];
+
+        const cols = 2;
+        const btnW = (w - 40) / cols;
+        const btnH = 50;
+        const gap = 8;
+        const startX = 20 + btnW / 2;
+        const startY = 110;
+
+        buildings.forEach((b, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = startX + col * (btnW + gap);
+            const y = startY + row * (btnH + gap);
+            if (y > h - 50) return;
+
+            const active = b.scene !== null;
+            const bg = this.add.rectangle(x, y, btnW - 4, btnH, active ? 0x2a4a3a : 0x2a2a3a)
+                .setStrokeStyle(2, active ? 0x4a9a5a : 0x555555);
+
+            this.add.text(x, y - 5, b.label, {
+                fontSize: '13px', color: active ? '#ffffff' : '#888888', fontStyle: 'bold',
+            }).setOrigin(0.5);
+
+            if (!active) {
+                this.add.text(x, y + 12, 'Soon', { fontSize: '9px', color: '#666666' }).setOrigin(0.5);
+            }
+
+            if (active) {
+                bg.setInteractive({ useHandCursor: true });
+                bg.on('pointerover', () => bg.setFillStyle(0x3a6a4a));
+                bg.on('pointerout', () => bg.setFillStyle(0x2a4a3a));
+                bg.on('pointerdown', () => this.scene.start(b.scene));
+            }
+        });
+    }
+}
+
+import Phaser from 'phaser';
+
+class FishingScene extends Phaser.Scene {
+
+    constructor() {
+        super({ key: 'FishingScene' });
+        this.isFishing = false;
+        this.infoTexts = {};
+    }
+
+    create() {
+        PlayerManager.load();
+        this.isFishing = false;
+
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+
+        this._buildHUD(w, h);
+        this._buildStartButton(w, h);
+        this._buildBackButton(w, h);
+    }
+
+    _buildHUD(w, h) {
+        const pd = PlayerManager.getData();
+        const spot = DataManager.getSpotByID(pd.location.currentSpot);
+        const rod  = DataManager.getRodByID(pd.equipment.rod);
+        const hook = DataManager.getHookByID(pd.equipment.hook);
+        const bait = DataManager.getBaitByID(pd.equipment.bait);
+
+        // Spot name
+        this.add.text(w / 2, 30, spot?.name ?? 'Unknown Spot', {
+            fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold',
+        }).setOrigin(0.5);
+
+        // Player info panel (left)
+        const ly = 80;
+        const style = { fontSize: '13px', color: '#cccccc' };
+        this.add.text(20, ly,      `🧑 ${pd.character.name}`, style);
+        this.add.text(20, ly + 20, `Lv.${pd.progress.level}`, style);
+        this.add.text(20, ly + 40, `🪙 ${pd.currency.gold}`,   { fontSize: '13px', color: '#ffd700' });
+        this.add.text(20, ly + 60, `💎 ${pd.currency.diamond}`, { fontSize: '13px', color: '#00ccff' });
+        this.add.text(20, ly + 80, `🐟 ${pd.currency.hfish}`,  { fontSize: '13px', color: '#00ff88' });
+
+        // Equipment panel (right)
+        const rx = w - 180;
+        this.add.text(rx, ly,      `🎣 ${rod?.name ?? '-'}`, style);
+        this.add.text(rx, ly + 20, `🪝 ${hook?.name ?? '-'}`, style);
+        this.add.text(rx, ly + 40, `🪱 ${bait?.name ?? '-'}`, style);
+        this.add.text(rx, ly + 60, `📦 Bait: ${pd.equipment.baitAmount}`, style);
+
+        // Environment info
+        const cy = ly + 110;
+        this.infoTexts.weather = this.add.text(w / 2, cy,      '', { fontSize: '12px', color: '#aabbcc' }).setOrigin(0.5);
+        this.infoTexts.season  = this.add.text(w / 2, cy + 18, '', { fontSize: '12px', color: '#aabbcc' }).setOrigin(0.5);
+        this.infoTexts.time    = this.add.text(w / 2, cy + 36, '', { fontSize: '12px', color: '#aabbcc' }).setOrigin(0.5);
+
+        this._updateEnvironmentInfo();
+    }
+
+    _updateEnvironmentInfo() {
+        const time = FishingSystem._getCurrentTime();
+        const weather = FishingSystem._getCurrentWeather();
+        const season = FishingSystem._getCurrentSeason();
+        const weatherData = DataManager.getWeatherByID(weather);
+        const seasonData  = DataManager.getSeasonByID(season);
+
+        this.infoTexts.weather.setText(`☁ Weather: ${weatherData?.name ?? weather}`);
+        this.infoTexts.season.setText(`🍂 Season: ${seasonData?.name ?? season}`);
+        this.infoTexts.time.setText(`🕐 Time: ${time}`);
+    }
+
+    _buildStartButton(w, h) {
+        this.startBtn = this.add.text(w / 2, h - 120, '🎣  START FISHING', {
+            fontSize: '20px', color: '#ffffff',
+            backgroundColor: '#2a7a3a',
+            padding: { x: 28, y: 12 },
+            fontStyle: 'bold',
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.startBtn.on('pointerdown', () => this._onStartFishing());
+        this.startBtn.on('pointerover', () => {
+            if (!this.isFishing) this.startBtn.setStyle({ backgroundColor: '#3a9a4a' });
+        });
+        this.startBtn.on('pointerout', () => {
+            if (!this.isFishing) this.startBtn.setStyle({ backgroundColor: '#2a7a3a' });
+        });
+    }
+
+    _buildBackButton(w, h) {
+        const backBtn = this.add.text(20, h - 30, '← Back', {
+            fontSize: '15px', color: '#888888',
+        }).setInteractive({ useHandCursor: true });
+        backBtn.on('pointerdown', () => this.scene.start('FishingHubScene'));
+    }
+
+    _onStartFishing() {
+        if (this.isFishing) return;
+
+        if (PlayerManager.getBaitAmount() <= 0) {
+            this._showMessage("You don't have bait.");
+            return;
+        }
+
+        PlayerManager.useBait();
+        this.isFishing = true;
+        this.startBtn.setStyle({ backgroundColor: '#333333' });
+        this.startBtn.setText('⏳ Fishing...');
+        this.startBtn.disableInteractive();
+
+        this.time.delayedCall(5000, () => {
+            this._processResult();
+        });
+    }
+
+    _processResult() {
+        const result = FishingSystem.processCatch();
+
+        if (result.success) {
+            InventoryManager.addFish(result.fish, result.weight);
+            PlayerManager.addToCollection(result.fish.id, result.weight);
+            PlayerManager.addFishStat(result.weight);
+            const expGain = Math.floor(result.fish.price / 2) + 10;
+            PlayerManager.addExp(expGain);
+            this._showCatchPopup(result.fish, result.weight, result.isNew);
+        } else {
+            this._showMessage(result.message);
+        }
+    }
+
+    _showCatchPopup(fish, weight, isNew) {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        const rarityColors = { common: '#aaaaaa', uncommon: '#55cc55', rare: '#5599ff', epic: '#aa55ff', legendary: '#ffaa00' };
+
+        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.7).setInteractive();
+        const panel = this.add.rectangle(w / 2, h / 2, w - 60, 280, 0x1a2a3a).setStrokeStyle(2, 0x4a9eff);
+
+        const elements = [];
+        let y = h / 2 - 110;
+
+        elements.push(this.add.text(w / 2, y, isNew ? '🎉 NEW SPECIES!' : '🐟 Fish Caught!', {
+            fontSize: '18px', color: isNew ? '#ffd700' : '#ffffff', fontStyle: 'bold',
+        }).setOrigin(0.5)); y += 30;
+
+        elements.push(this.add.text(w / 2, y, fish.name, {
+            fontSize: '22px', color: rarityColors[fish.rarity] || '#ffffff', fontStyle: 'bold',
+        }).setOrigin(0.5)); y += 28;
+
+        elements.push(this.add.text(w / 2, y, `${fish.rarity.toUpperCase()} · ${weight.toFixed(2)} kg`, {
+            fontSize: '13px', color: '#cccccc',
+        }).setOrigin(0.5)); y += 22;
+
+        elements.push(this.add.text(w / 2, y, `Sell Price: 🪙 ${fish.price}`, {
+            fontSize: '14px', color: '#ffd700',
+        }).setOrigin(0.5)); y += 20;
+
+        elements.push(this.add.text(w / 2, y, fish.description, {
+            fontSize: '11px', color: '#888888', wordWrap: { width: w - 100 }, align: 'center',
+        }).setOrigin(0.5)); y += 30;
+
+        const expGain = Math.floor(fish.price / 2) + 10;
+        elements.push(this.add.text(w / 2, y, `+${expGain} EXP`, {
+            fontSize: '13px', color: '#00ff88',
+        }).setOrigin(0.5));
+
+        const okBtn = this.add.text(w / 2, h / 2 + 110, 'OK', {
+            fontSize: '16px', color: '#ffffff', backgroundColor: '#2a7a3a',
+            padding: { x: 36, y: 10 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        okBtn.on('pointerdown', () => {
+            dim.destroy(); panel.destroy(); okBtn.destroy();
+            elements.forEach(e => e.destroy());
+            this.scene.restart();
+        });
+    }
+
+    _showMessage(msg) {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+
+        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.6).setInteractive();
+        const panel = this.add.rectangle(w / 2, h / 2, w - 80, 120, 0x1a2a3a).setStrokeStyle(2, 0xff6b6b);
+
+        const text = this.add.text(w / 2, h / 2 - 15, msg, {
+            fontSize: '16px', color: '#ff6b6b', fontStyle: 'bold',
+        }).setOrigin(0.5);
+
+        const okBtn = this.add.text(w / 2, h / 2 + 30, 'OK', {
+            fontSize: '14px', color: '#ffffff', backgroundColor: '#aa3333',
+            padding: { x: 28, y: 8 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        okBtn.on('pointerdown', () => {
+            dim.destroy(); panel.destroy(); text.destroy(); okBtn.destroy();
+            this.isFishing = false;
+            this.startBtn.setStyle({ backgroundColor: '#2a7a3a' });
+            this.startBtn.setText('🎣  START FISHING');
+            this.startBtn.setInteractive({ useHandCursor: true });
+        });
+    }
+}
+
+import Phaser from 'phaser';
+
+class InventoryScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'InventoryScene' });
+        this.currentTab = 'fish';
+        this.currentSort = 'newest';
+        this.currentFilter = null;
+        this.searchQuery = '';
+    }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+
+        this.add.text(w / 2, 20, '📦 INVENTORY', { fontSize: '20px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+
+        this._buildTabs(w);
+        this._buildSortBar(w);
+        this._buildFilterBar(w);
+        this._buildSearchBar(w);
+        this._buildFishList(w, h);
+        this._buildBackButton(h);
+    }
+
+    _buildTabs(w) {
+        const tabs = ['fish', 'bait', 'hooks', 'rods', 'boat', 'special', 'currency'];
+        const tabW = w / tabs.length;
+        tabs.forEach((tab, i) => {
+            const x = tabW * i + tabW / 2;
+            const btn = this.add.text(x, 50, tab.toUpperCase(), {
+                fontSize: '10px', color: this.currentTab === tab ? '#ffffff' : '#666666',
+                backgroundColor: this.currentTab === tab ? '#2a5a3a' : '#1a2a3a',
+                padding: { x: 4, y: 4 },
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            btn.on('pointerdown', () => { this.currentTab = tab; this.scene.restart(); });
+        });
+    }
+
+    _buildSortBar(w) {
+        if (this.currentTab !== 'fish') return;
+        const sorts = ['newest', 'oldest', 'highestPrice', 'lowestPrice', 'largestWeight', 'smallestWeight', 'nameAZ', 'nameZA'];
+        const labels = ['New', 'Old', '$↓', '$↑', 'Wt↓', 'Wt↑', 'A-Z', 'Z-A'];
+        const btnW = w / sorts.length;
+        sorts.forEach((s, i) => {
+            const x = btnW * i + btnW / 2;
+            const btn = this.add.text(x, 75, labels[i], {
+                fontSize: '10px', color: this.currentSort === s ? '#ffffff' : '#888888',
+                backgroundColor: this.currentSort === s ? '#3a4a5a' : '#1a2a3a',
+                padding: { x: 4, y: 3 },
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            btn.on('pointerdown', () => { this.currentSort = s; this.scene.restart(); });
+        });
+    }
+
+    _buildFilterBar(w) {
+        if (this.currentTab !== 'fish') return;
+        const filters = [null, 'common', 'uncommon', 'rare', 'epic', 'legendary'];
+        const labels = ['All', 'Cmn', 'Unc', 'Rar', 'Epi', 'Leg'];
+        const colors = ['#ffffff', '#aaaaaa', '#55cc55', '#5599ff', '#aa55ff', '#ffaa00'];
+        const btnW = w / filters.length;
+        filters.forEach((f, i) => {
+            const x = btnW * i + btnW / 2;
+            const btn = this.add.text(x, 96, labels[i], {
+                fontSize: '10px', color: this.currentFilter === f ? '#ffffff' : colors[i],
+                backgroundColor: this.currentFilter === f ? '#3a4a5a' : '#1a2a3a',
+                padding: { x: 4, y: 3 },
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            btn.on('pointerdown', () => { this.currentFilter = f; this.scene.restart(); });
+        });
+    }
+
+    _buildSearchBar(w) {
+        if (this.currentTab !== 'fish') return;
+        const bg = this.add.rectangle(w / 2, 118, w - 40, 26, 0x1a2a3a).setStrokeStyle(1, 0x3a4a5a);
+        this.add.text(w / 2 - 100, 118, '🔍', { fontSize: '12px' }).setOrigin(0, 0.5);
+        this.add.text(w / 2 - 80, 118, this.searchQuery || 'Search fish...', {
+            fontSize: '11px', color: this.searchQuery ? '#ffffff' : '#666666',
+        }).setOrigin(0, 0.5);
+        bg.setInteractive({ useHandCursor: true });
+        bg.on('pointerdown', () => {
+            const q = prompt('Search fish by name:', this.searchQuery || '');
+            if (q !== null) { this.searchQuery = q.trim(); this.scene.restart(); }
+        });
+    }
+
+    _buildFishList(w, h) {
+        if (this.currentTab !== 'fish') {
+            this.add.text(w / 2, h / 2, 'Coming Soon', { fontSize: '18px', color: '#555555' }).setOrigin(0.5);
+            return;
+        }
+
+        let fish = InventoryManager.getAllFish();
+        if (this.searchQuery) {
+            const q = this.searchQuery.toLowerCase();
+            fish = fish.filter(f => f.name.toLowerCase().includes(q));
+        }
+        if (this.currentFilter) fish = fish.filter(f => f.rarity === this.currentFilter);
+        fish = InventoryManager.sortFish(fish, this.currentSort);
+
+        const startY = 140;
+        const slotH = 48;
+        const maxSlots = Math.floor((h - startY - 50) / slotH);
+        const rarityColors = { common: 0xaaaaaa, uncommon: 0x55cc55, rare: 0x5599ff, epic: 0xaa55ff, legendary: 0xffaa00 };
+
+        fish.slice(0, maxSlots).forEach((f, i) => {
+            const y = startY + i * slotH;
+            this.add.rectangle(w / 2, y + 18, w - 20, 42, 0x1a2a3a, 0.8);
+            this.add.rectangle(10, y + 18, 4, 38, rarityColors[f.rarity] || 0xaaaaaa);
+            this.add.text(22, y + 6, `${f.favorite ? '⭐ ' : ''}${f.name}`, { fontSize: '13px', color: '#ffffff' });
+            this.add.text(22, y + 24, `${f.weight.toFixed(2)} kg · 🪙${f.price} · ${f.rarity}`, { fontSize: '10px', color: '#888888' });
+
+            const slot = this.add.rectangle(w / 2, y + 18, w - 20, 42).setInteractive({ useHandCursor: true });
+            slot.on('pointerdown', () => this._showFishDetail(f));
+        });
+
+        this.add.text(w / 2, h - 40, `${fish.length} fish`, { fontSize: '11px', color: '#666666' }).setOrigin(0.5);
+
+        if (fish.length === 0) {
+            this.add.text(w / 2, h / 2, 'No fish in inventory.', { fontSize: '14px', color: '#555555' }).setOrigin(0.5);
+        }
+    }
+
+    _showFishDetail(fish) {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        const fishData = DataManager.getFishByID(fish.fishId);
+        const rarityColors = { common: '#aaaaaa', uncommon: '#55cc55', rare: '#5599ff', epic: '#aa55ff', legendary: '#ffaa00' };
+
+        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.7).setInteractive();
+        const panel = this.add.rectangle(w / 2, h / 2, w - 50, 320, 0x1a2a3a).setStrokeStyle(2, 0x4a9eff);
+
+        const elements = [];
+        let y = h / 2 - 140;
+
+        elements.push(this.add.text(w / 2, y, fish.name, { fontSize: '20px', color: rarityColors[fish.rarity], fontStyle: 'bold' }).setOrigin(0.5)); y += 28;
+        elements.push(this.add.text(w / 2, y, `${fish.rarity.toUpperCase()} · ${fish.weight.toFixed(2)} kg`, { fontSize: '13px', color: '#cccccc' }).setOrigin(0.5)); y += 20;
+        elements.push(this.add.text(w / 2, y, `Price: 🪙 ${fish.price}`, { fontSize: '13px', color: '#ffd700' }).setOrigin(0.5)); y += 18;
+        elements.push(this.add.text(w / 2, y, `Spot: ${fish.spot ?? '-'}`, { fontSize: '11px', color: '#888888' }).setOrigin(0.5)); y += 16;
+        elements.push(this.add.text(w / 2, y, `Caught: ${new Date(fish.caughtAt).toLocaleDateString()}`, { fontSize: '11px', color: '#888888' }).setOrigin(0.5)); y += 20;
+
+        if (fishData) {
+            elements.push(this.add.text(w / 2, y, fishData.description, {
+                fontSize: '10px', color: '#666666', wordWrap: { width: w - 90 }, align: 'center',
+            }).setOrigin(0.5)); y += 28;
+        }
+
+        const favLabel = fish.favorite ? '⭐ Unfavorite' : '☆ Favorite';
+        const favBtn = this.add.text(w / 2 - 60, h / 2 + 120, favLabel, {
+            fontSize: '12px', color: '#ffd700', backgroundColor: '#2a2a1a',
+            padding: { x: 10, y: 6 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        favBtn.on('pointerdown', () => {
+            InventoryManager.favoriteFish(InventoryManager.getAllFish().indexOf(fish));
+            dim.destroy(); panel.destroy(); favBtn.destroy(); closeBtn.destroy();
+            elements.forEach(e => e.destroy());
+            this.scene.restart();
+        });
+
+        const closeBtn = this.add.text(w / 2 + 60, h / 2 + 120, 'Close', {
+            fontSize: '12px', color: '#ffffff', backgroundColor: '#2a7a3a',
+            padding: { x: 10, y: 6 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        closeBtn.on('pointerdown', () => {
+            dim.destroy(); panel.destroy(); favBtn.destroy(); closeBtn.destroy();
+            elements.forEach(e => e.destroy());
+        });
+    }
+
+    _buildBackButton(h) {
+        this.add.text(20, h - 25, '← Back', {
+            fontSize: '14px', color: '#888888',
+        }).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('FishingHubScene'));
+    }
+}
+
+import Phaser from 'phaser';
+
+class FishBookScene extends Phaser.Scene {
+    constructor() { super({ key: 'FishBookScene' }); }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+
+        this.add.text(w / 2, 20, '📖 FISH BOOK', { fontSize: '20px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+
+        // Progress
+        const stats = InventoryManager.getCollectionStats();
+        this.add.text(w / 2, 52, `Collected: ${stats.done} / ${stats.total} Species`, {
+            fontSize: '13px', color: '#cccccc',
+        }).setOrigin(0.5);
+
+        const barW = w - 100;
+        const ratio = stats.total > 0 ? stats.done / stats.total : 0;
+        this.add.rectangle(w / 2, 72, barW, 10, 0x222233);
+        this.add.rectangle(w / 2 - barW / 2, 72, barW * ratio, 10, 0x4a9eff, 1).setOrigin(0, 0.5);
+
+        // Rarity progress
+        const rarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+        const colors = { common: '#aaaaaa', uncommon: '#55cc55', rare: '#5599ff', epic: '#aa55ff', legendary: '#ffaa00' };
+        rarities.forEach((r, i) => {
+            const count = stats.rarityCount[r] || 0;
+            const total = stats.rarityTotal[r] || 0;
+            this.add.text(20, 92 + i * 16, `${r.charAt(0).toUpperCase() + r.slice(1)}: ${count}/${total}`, {
+                fontSize: '10px', color: colors[r],
+            });
+        });
+
+        // Fish grid
+        const allFish = DataManager.getFish();
+        const startY = 185;
+        const slotH = 44;
+        const maxSlots = Math.floor((h - startY - 40) / slotH);
+        const rarityColors = { common: 0xaaaaaa, uncommon: 0x55cc55, rare: 0x5599ff, epic: 0xaa55ff, legendary: 0xffaa00 };
+
+        allFish.slice(0, maxSlots).forEach((f, i) => {
+            const y = startY + i * slotH;
+            const collected = InventoryManager.isCollected(f.id);
+
+            this.add.rectangle(w / 2, y + 16, w - 20, 40, collected ? 0x1a2a3a : 0x111118, 0.8);
+            this.add.rectangle(10, y + 16, 4, 36, collected ? (rarityColors[f.rarity] || 0xaaaaaa) : 0x333333);
+
+            if (collected) {
+                const coll = InventoryManager.getCollection().find(c => c.id === f.id);
+                this.add.text(22, y + 6, f.name, { fontSize: '12px', color: '#ffffff' });
+                this.add.text(22, y + 22, `${f.rarity} · ${coll.biggestWeight.toFixed(2)} kg · Caught: ${coll.caught}`, {
+                    fontSize: '9px', color: '#888888',
+                });
+                const slot = this.add.rectangle(w / 2, y + 16, w - 20, 40).setInteractive({ useHandCursor: true });
+                slot.on('pointerdown', () => this._showDetail(f));
+            } else {
+                this.add.text(22, y + 14, '???????', { fontSize: '13px', color: '#333344' });
+            }
+        });
+
+        this.add.text(20, h - 25, '← Back', { fontSize: '14px', color: '#888888' })
+            .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('FishingHubScene'));
+    }
+
+    _showDetail(fish) {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        const coll = InventoryManager.getCollection().find(c => c.id === fish.id);
+        const rarityColors = { common: '#aaaaaa', uncommon: '#55cc55', rare: '#5599ff', epic: '#aa55ff', legendary: '#ffaa00' };
+
+        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.7).setInteractive();
+        const panel = this.add.rectangle(w / 2, h / 2, w - 50, 340, 0x1a2a3a).setStrokeStyle(2, 0x4a9eff);
+
+        const elements = [];
+        let y = h / 2 - 150;
+
+        elements.push(this.add.text(w / 2, y, fish.name, { fontSize: '20px', color: rarityColors[fish.rarity], fontStyle: 'bold' }).setOrigin(0.5)); y += 26;
+        elements.push(this.add.text(w / 2, y, fish.description, { fontSize: '10px', color: '#888888', wordWrap: { width: w - 90 }, align: 'center' }).setOrigin(0.5)); y += 28;
+        elements.push(this.add.text(w / 2, y, `Rarity: ${fish.rarity.toUpperCase()}`, { fontSize: '12px', color: rarityColors[fish.rarity] }).setOrigin(0.5)); y += 18;
+        elements.push(this.add.text(w / 2, y, `Habitat: ${fish.location.join(', ')}`, { fontSize: '11px', color: '#cccccc' }).setOrigin(0.5)); y += 16;
+        elements.push(this.add.text(w / 2, y, `Season: ${fish.preferredSeason?.join(', ') ?? '-'}  |  Time: ${fish.preferredTime?.join(', ') ?? '-'}`, { fontSize: '10px', color: '#aaaaaa' }).setOrigin(0.5)); y += 14;
+        elements.push(this.add.text(w / 2, y, `Weather: ${fish.preferredWeather?.join(', ') ?? '-'}`, { fontSize: '10px', color: '#aaaaaa' }).setOrigin(0.5)); y += 14;
+        elements.push(this.add.text(w / 2, y, `Bait: ${fish.preferredBait?.join(', ') ?? '-'}`, { fontSize: '10px', color: '#aaaaaa' }).setOrigin(0.5)); y += 14;
+        elements.push(this.add.text(w / 2, y, `Weight: ${fish.minWeight} - ${fish.maxWeight} kg  |  Price: 🪙 ${fish.price}`, { fontSize: '11px', color: '#ffd700' }).setOrigin(0.5)); y += 20;
+
+        if (coll) {
+            elements.push(this.add.text(w / 2, y, `Caught: ${coll.caught}x  |  Best: ${coll.biggestWeight.toFixed(2)} kg`, { fontSize: '11px', color: '#55cc55' }).setOrigin(0.5)); y += 18;
+        }
+
+        elements.push(this.add.text(w / 2, y, '🏛️ Museum: Not Donated', { fontSize: '10px', color: '#666666' }).setOrigin(0.5));
+
+        const closeBtn = this.add.text(w / 2, h / 2 + 155, 'OK', {
+            fontSize: '14px', color: '#ffffff', backgroundColor: '#2a7a3a',
+            padding: { x: 28, y: 8 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        closeBtn.on('pointerdown', () => {
+            dim.destroy(); panel.destroy(); closeBtn.destroy();
+            elements.forEach(e => e.destroy());
+        });
+    }
+}
+
+import Phaser from 'phaser';
+
+class FishMarketScene extends Phaser.Scene {
+    constructor() { super({ key: 'FishMarketScene' }); }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+        this.add.text(w / 2, 20, '🏪 FISH MARKET', { fontSize: '20px', color: '#ffd700', fontStyle: 'bold' }).setOrigin(0.5);
+
+        let fish = InventoryManager.getAllFish();
+        const startY = 60;
+        const slotH = 46;
+        const maxSlots = Math.floor((h - startY - 100) / slotH);
+        const rc = { common: 0xaaaaaa, uncommon: 0x55cc55, rare: 0x5599ff, epic: 0xaa55ff, legendary: 0xffaa00 };
+
+        fish.slice(0, maxSlots).forEach((f, i) => {
+            const y = startY + i * slotH;
+            this.add.rectangle(w / 2, y + 16, w - 20, 40, 0x1a2a3a);
+            this.add.rectangle(10, y + 16, 4, 36, rc[f.rarity] || 0xaaaaaa);
+            this.add.text(22, y + 6, `${f.favorite ? '⭐ ' : ''}${f.name}`, { fontSize: '12px', color: '#ffffff' });
+            this.add.text(22, y + 22, `${f.weight.toFixed(2)} kg · 🪙${f.price}`, { fontSize: '10px', color: '#ffd700' });
+
+            const slot = this.add.rectangle(w / 2, y + 16, w - 20, 40).setInteractive({ useHandCursor: true });
+            slot.on('pointerdown', () => { MarketManager.sellOne(InventoryManager.getAllFish().indexOf(f)); this.scene.restart(); });
+        });
+
+        if (fish.length > 0) {
+            this.add.text(w / 2, h - 60, '💰 SELL ALL (except ⭐)', {
+                fontSize: '14px', color: '#ffffff', backgroundColor: '#8a6a1a',
+                padding: { x: 14, y: 8 },
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => { MarketManager.sellAll(); this.scene.restart(); });
+        } else {
+            this.add.text(w / 2, h / 2, 'No fish to sell.', { fontSize: '14px', color: '#555555' }).setOrigin(0.5);
+        }
+
+        this.add.text(20, h - 25, '← Back', { fontSize: '14px', color: '#888888' })
+            .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('FishingHubScene'));
+    }
+}
+
+import Phaser from 'phaser';
+
+class BaitShopScene extends Phaser.Scene {
+    constructor() { super({ key: 'BaitShopScene' }); }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+        this.add.text(w / 2, 20, '🪱 BAIT SHOP', { fontSize: '20px', color: '#55cc55', fontStyle: 'bold' }).setOrigin(0.5);
+        this.add.text(w / 2, 48, `Gold: 🪙 ${PlayerManager.getGold()}`, { fontSize: '13px', color: '#ffd700' }).setOrigin(0.5);
+
+        const baits = DataManager.getBaits();
+        const startY = 80;
+        const slotH = 65;
+
+        baits.forEach((b, i) => {
+            const y = startY + i * slotH;
+            if (y > h - 80) return;
+            this.add.rectangle(w / 2, y + 24, w - 20, 56, 0x1a2a3a);
+            this.add.text(20, y + 8, b.name, { fontSize: '13px', color: '#ffffff', fontStyle: 'bold' });
+            this.add.text(20, y + 28, b.description, { fontSize: '10px', color: '#888888' });
+            this.add.text(20, y + 44, `🪙 ${b.price}`, { fontSize: '11px', color: '#ffd700' });
+
+            const buyBtn = this.add.text(w - 50, y + 24, 'BUY', {
+                fontSize: '12px', color: '#ffffff', backgroundColor: '#2a7a3a',
+                padding: { x: 10, y: 6 },
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            buyBtn.on('pointerdown', () => { ShopManager.buyBait(b.id); this.scene.restart(); });
+        });
+
+        this.add.text(20, h - 25, '← Back', { fontSize: '14px', color: '#888888' })
+            .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('FishingHubScene'));
+    }
+}
+
+import Phaser from 'phaser';
+
+class RodWorkshopScene extends Phaser.Scene {
+    constructor() { super({ key: 'RodWorkshopScene' }); }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+        this.add.text(w / 2, 20, '🔧 ROD WORKSHOP', { fontSize: '20px', color: '#5599ff', fontStyle: 'bold' }).setOrigin(0.5);
+
+        const rods = DataManager.getRods();
+        const owned = PlayerManager.getOwnedRods();
+        const startY = 65;
+        const slotH = 75;
+
+        rods.forEach((r, i) => {
+            const y = startY + i * slotH;
+            if (y > h - 60) return;
+            const isOwned = owned.includes(r.id);
+            this.add.rectangle(w / 2, y + 30, w - 20, 66, isOwned ? 0x1a2a1a : 0x1a1a22);
+            this.add.text(20, y + 10, `${isOwned ? '✅' : '🔒'} ${r.name} Lv.${r.level}`, {
+                fontSize: '13px', color: isOwned ? '#ffffff' : '#666666', fontStyle: 'bold',
+            });
+            this.add.text(20, y + 32, r.description, { fontSize: '10px', color: '#888888' });
+            this.add.text(20, y + 50, `Luck: +${r.luckBonus}  Speed: +${r.speedBonus}  🪙${r.price}`, { fontSize: '10px', color: '#aaaaaa' });
+        });
+
+        this.add.text(20, h - 25, '← Back', { fontSize: '14px', color: '#888888' })
+            .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('FishingHubScene'));
+    }
+}
+
+import Phaser from 'phaser';
+
+class HarborScene extends Phaser.Scene {
+    constructor() { super({ key: 'HarborScene' }); }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+        this.add.text(w / 2, 20, '⚓ HARBOR', { fontSize: '20px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+
+        const spots = DataManager.getSpots();
+        const unlocked = PlayerManager.getUnlockedSpots();
+        const level = PlayerManager.getLevel();
+        const startY = 65;
+        const slotH = 70;
+
+        spots.forEach((s, i) => {
+            const y = startY + i * slotH;
+            if (y > h - 60) return;
+            const isUnlocked = unlocked.includes(s.id);
+            const canUnlock = level >= s.unlockLevel;
+            this.add.rectangle(w / 2, y + 28, w - 20, 62, isUnlocked ? 0x1a2a1a : 0x1a1a22);
+
+            const icon = isUnlocked ? '✅' : (canUnlock ? '🔓' : '🔒');
+            this.add.text(20, y + 8, `${icon} ${s.name}`, {
+                fontSize: '13px', color: isUnlocked ? '#ffffff' : (canUnlock ? '#ffd700' : '#666666'), fontStyle: 'bold',
+            });
+            this.add.text(20, y + 30, s.description, { fontSize: '10px', color: '#888888' });
+            this.add.text(20, y + 48, `Lv.${s.unlockLevel} req  |  💎${s.diamondRequired}`, { fontSize: '10px', color: '#aaaaaa' });
+
+            if (isUnlocked) {
+                const btn = this.add.text(w - 45, y + 28, 'GO', {
+                    fontSize: '12px', color: '#ffffff', backgroundColor: '#2a5a3a',
+                    padding: { x: 10, y: 6 },
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                btn.on('pointerdown', () => { PlayerManager.setCurrentSpot(s.id); this.scene.start('FishingScene'); });
+            }
+        });
+
+        this.add.text(20, h - 25, '← Back', { fontSize: '14px', color: '#888888' })
+            .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('FishingHubScene'));
+    }
+}
+
+import Phaser from 'phaser';
+
+class SettingsScene extends Phaser.Scene {
+    constructor() { super({ key: 'SettingsScene' }); }
+
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
+        PlayerManager.load();
+        const settings = PlayerManager.getSettings();
+
+        this.add.text(w / 2, 30, '⚙️ SETTINGS', { fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+
+        this._createSlider(w, 100, '🎵 Music Volume', settings.musicVolume, (val) => { settings.musicVolume = val; PlayerManager.save(); });
+        this._createSlider(w, 170, '🔊 SFX Volume', settings.sfxVolume, (val) => { settings.sfxVolume = val; PlayerManager.save(); });
+
+        this.add.text(w / 2, 240, '🌐 Language: English', { fontSize: '15px', color: '#cccccc' }).setOrigin(0.5);
+
+        const resetBtn = this.add.text(w / 2, 320, '🗑️ Reset Save Data', {
+            fontSize: '16px', color: '#ff6b6b', backgroundColor: '#2a1a1a',
+            padding: { x: 18, y: 10 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        resetBtn.on('pointerdown', () => this._confirmReset(w, h));
+
+        this.add.text(w / 2, h - 60, 'HOLD FISH v0.1.0', { fontSize: '11px', color: '#555555' }).setOrigin(0.5);
+
+        this.add.text(20, h - 25, '← Back', { fontSize: '14px', color: '#888888' })
+            .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.scene.start('FishingHubScene'));
+    }
+
+    _createSlider(w, y, label, value, onChange) {
+        this.add.text(20, y, label, { fontSize: '15px', color: '#cccccc' });
+        const barX = w / 2 - 80;
+        const barW = 200;
+        const barBg = this.add.rectangle(w / 2, y + 5, barW, 10, 0x222233).setInteractive({ useHandCursor: true });
+        const barFill = this.add.rectangle(barX - barW / 2, y + 5, (value / 100) * barW, 10, 0x4ac5ff).setOrigin(0, 0.5);
+        const valText = this.add.text(w - 40, y, `${value}%`, { fontSize: '14px', color: '#ffd700' }).setOrigin(1, 0);
+
+        barBg.on('pointerdown', (pointer) => {
+            const relX = pointer.x - (barX - barW / 2);
+            const pct = Math.max(0, Math.min(100, Math.round((relX / barW) * 100)));
+            barFill.width = (pct / 100) * barW;
+            valText.setText(`${pct}%`);
+            onChange(pct);
+        });
+    }
+
+    _confirmReset(w, h) {
+        const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.7).setInteractive();
+        const panel = this.add.rectangle(w / 2, h / 2, w - 80, 160, 0x1a2a3a).setStrokeStyle(2, 0xff6b6b);
+        const text = this.add.text(w / 2, h / 2 - 30, 'Delete all save data?', { fontSize: '16px', color: '#ff6b6b', fontStyle: 'bold' }).setOrigin(0.5);
+        const sub = this.add.text(w / 2, h / 2 - 5, 'This cannot be undone.', { fontSize: '12px', color: '#888888' }).setOrigin(0.5);
+
+        const yesBtn = this.add.text(w / 2 - 60, h / 2 + 40, 'Yes', {
+            fontSize: '14px', color: '#ffffff', backgroundColor: '#aa3333',
+            padding: { x: 16, y: 8 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        const noBtn = this.add.text(w / 2 + 60, h / 2 + 40, 'Cancel', {
+            fontSize: '14px', color: '#ffffff', backgroundColor: '#333344',
+            padding: { x: 16, y: 8 },
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        const cleanup = () => { dim.destroy(); panel.destroy(); text.destroy(); sub.destroy(); yesBtn.destroy(); noBtn.destroy(); };
+        yesBtn.on('pointerdown', () => { cleanup(); localStorage.removeItem('holdfish_save'); this.scene.start('BootScene'); });
+        noBtn.on('pointerdown', cleanup);
+    }
+}
+
+
+// ===== DATA MANAGER =====
+
+const DataManager = {
+    fish: fishData,
+    spots: spotData,
+    rods: rodData,
+    hooks: hookData,
+    baits: baitData,
+    boats: boatData,
+    weather: weatherData,
+    seasons: seasonData,
+    currencies: currencyData,
+    achievements: achievementData,
+    titles: titleData,
+    museum: museumData,
+    restaurants: restaurantData,
+    npcs: npcData,
+    items: itemData,
+    rarity: rarityData,
+    settings: settingsData,
+
+    // === Fish ===
+    getFish()         { return this.fish; },
+    getFishByID(id)   { return this.fish.find(f => f.id === id) || null; },
+
+    // === Spots ===
+    getSpots()        { return this.spots; },
+    getSpotByID(id)   { return this.spots.find(s => s.id === id) || null; },
+
+    // === Rods ===
+    getRods()         { return this.rods; },
+    getRodByID(id)    { return this.rods.find(r => r.id === id) || null; },
+
+    // === Hooks ===
+    getHooks()        { return this.hooks; },
+    getHookByID(id)   { return this.hooks.find(h => h.id === id) || null; },
+
+    // === Baits ===
+    getBaits()        { return this.baits; },
+    getBaitByID(id)   { return this.baits.find(b => b.id === id) || null; },
+
+    // === Boats ===
+    getBoats()        { return this.boats; },
+    getBoatByID(id)   { return this.boats.find(b => b.id === id) || null; },
+
+    // === Weather ===
+    getWeather()              { return this.weather; },
+    getWeatherByID(id)        { return this.weather.find(w => w.id === id) || null; },
+
+    // === Seasons ===
+    getSeasons()              { return this.seasons; },
+    getSeasonByID(id)         { return this.seasons.find(s => s.id === id) || null; },
+
+    // === Currency ===
+    getCurrencies()           { return this.currencies; },
+    getCurrencyByID(id)       { return this.currencies.find(c => c.id === id) || null; },
+
+    // === Achievements ===
+    getAchievements()         { return this.achievements; },
+    getAchievementByID(id)    { return this.achievements.find(a => a.id === id) || null; },
+
+    // === Titles ===
+    getTitles()               { return this.titles; },
+    getTitleByID(id)          { return this.titles.find(t => t.id === id) || null; },
+
+    // === Museum ===
+    getMuseum()               { return this.museum; },
+    getMuseumByID(id)         { return this.museum.find(m => m.id === id) || null; },
+
+    // === Restaurants ===
+    getRestaurants()          { return this.restaurants; },
+    getRestaurantByID(id)     { return this.restaurants.find(r => r.id === id) || null; },
+
+    // === NPCs ===
+    getNPCs()                 { return this.npcs; },
+    getNPCByID(id)            { return this.npcs.find(n => n.id === id) || null; },
+
+    // === Items ===
+    getItems()                { return this.items; },
+    getItemByID(id)           { return this.items.find(i => i.id === id) || null; },
+
+    // === Rarity ===
+    getRarity(id)             { return this.rarity[id] || null; },
+
+    // === Settings ===
+    getSettings()             { return this.settings; },
+};
+
+DataManager;
+
+
+// ===== GAME START =====
+new Phaser.Game({
+    type: Phaser.AUTO,
+    width: 640,
+    height: 960,
+    parent: 'game-container',
+    backgroundColor: '#1a2a3a',
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: [
+        BootScene,
+        CharacterCreationScene,
+        FishingHubScene,
+        FishingScene,
+        InventoryScene,
+        FishBookScene,
+        FishMarketScene,
+        BaitShopScene,
+        RodWorkshopScene,
+        HarborScene,
+        SettingsScene,
+    ],
+});
+
+</script>
+</body>
+</html>
