@@ -13,44 +13,35 @@
             overflow: hidden;
             background: #0a0a1a;
             touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
         }
         #game-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #fallback {
-            display: none;
-            color: #ff6b6b;
-            text-align: center;
-            padding: 20px;
-            font-family: sans-serif;
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
 <body>
-    <div id="game-container"></div>
-    <div id="fallback">
-        <p>🎣 HOLD FISH</p>
-        <p style="margin-top:10px;font-size:14px;color:#aaa;">Loading game...</p>
-        <p id="fallback-msg" style="margin-top:10px;font-size:12px;color:#666;"></p>
+    <div id="game-container">
+        <div id="boot-msg" style="color:#4ac5ff;text-align:center;padding-top:40vh;font-family:sans-serif;font-size:18px;">
+            🎣 HOLD FISH - Loading...
+        </div>
     </div>
-    <script>
-        // Fallback: tampilkan pesan jika game gagal load dalam 5 detik
-        setTimeout(function() {
-            var canvas = document.querySelector('canvas');
-            if (!canvas) {
-                document.getElementById('fallback').style.display = 'block';
-                document.getElementById('fallback-msg').textContent = 'Game canvas not found. Check console for errors.';
-            }
-        }, 5000);
-    </script>
-    <link rel="stylesheet" href="/styles/style.css">
     <script type="module" src="/src/main.js"></script>
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            var el = document.getElementById('boot-msg');
+            if (el) {
+                el.style.color = '#ff6b6b';
+                el.innerHTML = 'ERROR: ' + msg + '<br><small>' + (url||'') + ':' + line + '</small>';
+            }
+            return false;
+        };
+        setTimeout(function() {
+            var el = document.getElementById('boot-msg');
+            if (el && el.style.display !== 'none') {
+                el.innerHTML = '🎣 HOLD FISH<br><small style="color:#888">Canvas may not have loaded. Check console.</small>';
+            }
+        }, 8000);
+    </script>
 </body>
 </html>
