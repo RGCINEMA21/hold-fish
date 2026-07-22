@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>TEST</title>
+<style>
+* { margin:0; padding:0; }
+html,body { width:100%; height:100%; overflow:hidden; background:#1a2a3a; }
+</style>
+</head>
+<body>
+<div id="g" style="width:100%;height:100%;"></div>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<script>
+new Phaser.Game({
+    type: Phaser.AUTO,
+    width: 640,
+    height: 960,
+    parent: 'g',
+    backgroundColor: '#1a2a3a',
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: {
+        create: function() {
+            var w = this.cameras.main.width;
+            var h = this.cameras.main.height;
+            this.add.text(w/2, h/2-40, '\uD83C\uDFA3', {fontSize:'64px'}).setOrigin(0.5);
+            this.add.text(w/2, h/2+30, 'TEST WORKS!', {fontSize:'32px', color:'#4ac5ff', fontStyle:'bold'}).setOrigin(0.5);
+            this.add.text(w/2, h/2+80, 'Canvas: '+w+'x'+h, {fontSize:'16px', color:'#ffffff'}).setOrigin(0.5);
+        }
+    }
+});
+</script>
+</body>
+</html>
