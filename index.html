@@ -2,23 +2,148 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HOLD FISH</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            width: 100%; height: 100%;
-            overflow: hidden;
-            background: #0a0a1a;
-            touch-action: none;
-        }
-        #game-container { width: 100%; height: 100%; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html,body { width:100%; height:100%; overflow:hidden; background:#1a2a3a; touch-action:none; }
+        #game-container { width:100%; height:100%; }
     </style>
 </head>
 <body>
     <div id="game-container"></div>
-    <script type="module" src="/src/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <script>
+    // === SAVE MANAGER ===
+    var SAVE_KEY = 'holdfish_save';
+    function saveGame(d) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); return true; } catch(e) { return false; } }
+    function loadGame() { try { var r = localStorage.getItem(SAVE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }
+    function hasSaveData() { return localStorage.getItem(SAVE_KEY) !== null; }
+    function newPlayer(name) {
+        return {
+            character: { name: name, gender: 'male', avatar: 0 },
+            progress: { level: 1, exp: 0 },
+            currency: { gold: 500, diamond: 0, hfish: 0 },
+            equipment: { rod: 'wood_rod', hook: 'basic_hook', bait: 'worm_bait', baitAmount: 20 },
+            location: { currentSpot: 'village_pond' },
+            inventory: [], fishCollection: [],
+            settings: { musicVolume: 100, sfxVolume: 100 },
+            meta: { createdDate: new Date().toISOString() }
+        };
+    }
+    var player = null;
+
+    // === BOOT SCENE ===
+    var BootScene = new Phaser.Class({
+        Extends: Phaser.Scene,
+        initialize: function() { Phaser.Scene.call(this, { key: 'BootScene' }); },
+        create: function() {
+            var w = this.cameras.main.width, h = this.cameras.main.height;
+            this.cameras.main.setBackgroundColor(0x1a2a3a);
+            this.add.text(w/2, h/2-60, '\uD83C\uDFA3', { fontSize: '72px' }).setOrigin(0.5);
+            this.add.text(w/2, h/2+20, 'HOLD FISH', { fontSize: '36px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+            this.add.text(w/2, h/2+60, 'Casual Fishing RPG', { fontSize: '14px', color: '#667788' }).setOrigin(0.5);
+            var btn = this.add.rectangle(w/2, h/2+130, 300, 60, 0x2a7a3a).setStrokeStyle(3, 0x4ac5ff);
+            btn.setInteractive({ useHandCursor: true });
+            this.add.text(w/2, h/2+130, 'TAP TO START', { fontSize: '22px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
+            var self = this;
+            btn.on('pointerdown', function() { self.goNext(); });
+            this.input.on('pointerdown', function() { self.goNext(); });
+        },
+        goNext: function() {
+            if (hasSaveData()) { player = loadGame(); this.scene.start('HubScene'); }
+            else { this.scene.start('CreateScene'); }
+        }
+    });
+
+    // === CREATE SCENE ===
+    var CreateScene = new Phaser.Class({
+        Extends: Phaser.Scene,
+        initialize: function() { Phaser.Scene.call(this, { key: 'CreateScene' }); this.pname = ''; },
+        create: function() {
+            var w = this.cameras.main.width, h = this.cameras.main.height;
+            this.cameras.main.setBackgroundColor(0x1a2a3a);
+            var self = this;
+            this.add.text(w/2, 50, 'CREATE CHARACTER', { fontSize: '24px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+            this.add.text(w/2, 130, 'Character Name', { fontSize: '16px', color: '#ccc' }).setOrigin(0.5);
+            this.nameBox = this.add.text(w/2, 175, 'Tap here to type...', {
+                fontSize: '18px', color: '#888', backgroundColor: '#2a3a4a',
+                padding: { x: 16, y: 12 }, fixedWidth: 320, align: 'center'
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            this.nameBox.on('pointerdown', function() {
+                var inp = document.createElement('input');
+                inp.type = 'text'; inp.maxLength = 16; inp.placeholder = 'Name (3-16)';
+                inp.value = self.pname;
+                var r = self.game.canvas.getBoundingClientRect();
+                inp.style.cssText = 'position:fixed;top:'+(r.top+r.height*0.16)+'px;left:'+(r.left+r.width*0.1)+'px;width:'+(r.width*0.8)+'px;height:50px;font-size:20px;padding:8px;border:2px solid #4a9eff;border-radius:10px;background:#1a2a3a;color:#fff;text-align:center;z-index:9999;outline:none;';
+                document.body.appendChild(inp);
+                inp.focus();
+                inp.addEventListener('blur', function() {
+                    self.pname = inp.value.trim();
+                    self.nameBox.setText(self.pname || 'Tap here to type...');
+                    self.nameBox.setStyle({ color: self.pname ? '#fff' : '#888' });
+                    if (inp.parentNode) inp.remove();
+                });
+                inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') inp.blur(); });
+            });
+            this.errT = this.add.text(w/2, 240, '', { fontSize: '14px', color: '#ff6b6b' }).setOrigin(0.5).setAlpha(0);
+            var sbtn = this.add.rectangle(w/2, 320, 280, 56, 0x2a7a3a).setStrokeStyle(2, 0x4ac5ff);
+            sbtn.setInteractive({ useHandCursor: true });
+            this.add.text(w/2, 320, 'START JOURNEY', { fontSize: '20px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
+            sbtn.on('pointerdown', function() {
+                if (self.pname.length < 3) {
+                    self.errT.setText('Min 3 characters!').setAlpha(1);
+                    self.time.delayedCall(2000, function() { self.errT.setAlpha(0); });
+                    return;
+                }
+                player = newPlayer(self.pname);
+                saveGame(player);
+                self.scene.start('HubScene');
+            });
+        }
+    });
+
+    // === HUB SCENE ===
+    var HubScene = new Phaser.Class({
+        Extends: Phaser.Scene,
+        initialize: function() { Phaser.Scene.call(this, { key: 'HubScene' }); },
+        create: function() {
+            if (!player) player = loadGame();
+            var w = this.cameras.main.width, h = this.cameras.main.height;
+            this.cameras.main.setBackgroundColor(0x1a2a3a);
+            var nm = player ? player.character.name : 'Fisher';
+            var lv = player ? player.progress.level : 1;
+            var gd = player ? player.currency.gold : 0;
+            this.add.text(w/2, 30, '\uD83C\uDFE0 FISHING HUB', { fontSize: '26px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+            this.add.text(w/2, 70, nm + '  Lv.' + lv, { fontSize: '16px', color: '#fff' }).setOrigin(0.5);
+            this.add.text(w/2, 95, '\uD83E\uDE99 ' + gd + ' Gold', { fontSize: '14px', color: '#ffd700' }).setOrigin(0.5);
+            var labels = ['\uD83C\uDFA3 Fishing Dock','\uD83C\uDFEA Fish Market','\uD83E\uDEB1 Bait Shop','\uD83D\uDD27 Rod Workshop','\u2693 Harbor','\uD83D\uDCD6 Fish Book','\uD83D\uDCE6 Inventory','\u2699\uFE0F Settings'];
+            var cols = 2, bw = (w-60)/cols, self = this;
+            for (var i = 0; i < labels.length; i++) {
+                var col = i%cols, row = Math.floor(i/cols);
+                var bx = 30+col*(bw+10)+bw/2, by = 140+row*70;
+                var bg = this.add.rectangle(bx, by, bw, 55, 0x2a4a3a).setStrokeStyle(2, 0x4a9a5a);
+                bg.setInteractive({ useHandCursor: true });
+                this.add.text(bx, by, labels[i], { fontSize: '13px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
+                (function(l) {
+                    bg.on('pointerdown', function() {
+                        var t = self.add.text(w/2, h-60, l+' - Coming Soon', { fontSize: '14px', color: '#ffd700' }).setOrigin(0.5);
+                        self.time.delayedCall(1500, function() { t.destroy(); });
+                    });
+                })(labels[i]);
+            }
+        }
+    });
+
+    // === START ===
+    new Phaser.Game({
+        type: Phaser.AUTO,
+        width: 640, height: 960,
+        parent: 'game-container',
+        backgroundColor: '#1a2a3a',
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+        scene: [BootScene, CreateScene, HubScene]
+    });
+    </script>
 </body>
 </html>
