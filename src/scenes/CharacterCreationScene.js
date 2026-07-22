@@ -11,7 +11,6 @@ export default class CharacterCreationScene extends Phaser.Scene {
     }
 
     create() {
-        console.log('[CharCreate] Scene started');
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x0a1628);
@@ -19,7 +18,6 @@ export default class CharacterCreationScene extends Phaser.Scene {
         this.add.text(w / 2, 50, '🎣 HOLD FISH', { fontSize: '28px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
         this.add.text(w / 2, 85, 'Create Your Character', { fontSize: '14px', color: '#8899aa' }).setOrigin(0.5);
 
-        // Name
         this.add.text(w / 2, 140, 'Character Name', { fontSize: '14px', color: '#cccccc' }).setOrigin(0.5);
         this.nameDisplay = this.add.text(w / 2, 175, 'Tap to enter name...', {
             fontSize: '16px', color: '#888888', backgroundColor: '#1a2a3a',
@@ -34,7 +32,6 @@ export default class CharacterCreationScene extends Phaser.Scene {
             }
         });
 
-        // Gender
         this.add.text(w / 2, 230, 'Gender', { fontSize: '14px', color: '#cccccc' }).setOrigin(0.5);
         this.maleBtn = this.add.text(w / 2 - 70, 265, '♂ Male', {
             fontSize: '15px', color: '#ffffff', backgroundColor: '#4a9eff',
@@ -47,7 +44,6 @@ export default class CharacterCreationScene extends Phaser.Scene {
         this.maleBtn.on('pointerdown', () => this._setGender('male'));
         this.femaleBtn.on('pointerdown', () => this._setGender('female'));
 
-        // Avatar
         this.add.text(w / 2, 330, 'Avatar', { fontSize: '14px', color: '#cccccc' }).setOrigin(0.5);
         const colors = [0x4ac5ff, 0xff6b6b, 0x51cf66, 0xffd43b];
         this.avatarBgs = [];
@@ -64,10 +60,8 @@ export default class CharacterCreationScene extends Phaser.Scene {
             this.avatarBgs.push(bg);
         });
 
-        // Error
         this.errorText = this.add.text(w / 2, 430, '', { fontSize: '13px', color: '#ff6b6b' }).setOrigin(0.5).setAlpha(0);
 
-        // Start
         const startBtn = this.add.text(w / 2, 500, '🎣  START JOURNEY', {
             fontSize: '18px', color: '#ffffff', backgroundColor: '#2a7a3a',
             padding: { x: 24, y: 12 }, fontStyle: 'bold',
@@ -87,25 +81,18 @@ export default class CharacterCreationScene extends Phaser.Scene {
             this.time.delayedCall(2000, () => this.errorText.setAlpha(0));
             return;
         }
-        if (this.playerName.length > 16) {
-            this.errorText.setText('Nama maksimal 16 karakter').setAlpha(1);
-            this.time.delayedCall(2000, () => this.errorText.setAlpha(0));
-            return;
-        }
 
-        try {
-            const player = SaveManager.createPlayer({
-                name: this.playerName,
-                gender: this.selectedGender,
-                avatar: this.selectedAvatar,
-            });
-            SaveManager.save(player);
-            PlayerManager.load();
-            console.log('[CharCreate] Save OK, going to FishingHubScene');
+        const player = SaveManager.createPlayer({
+            name: this.playerName,
+            gender: this.selectedGender,
+            avatar: this.selectedAvatar,
+        });
+        SaveManager.save(player);
+        PlayerManager.load();
+
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
             this.scene.start('FishingHubScene');
-        } catch (e) {
-            console.error('[CharCreate] Error:', e);
-            this.errorText.setText('Error: ' + e.message).setAlpha(1);
-        }
+        });
     }
 }

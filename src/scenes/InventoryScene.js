@@ -15,6 +15,7 @@ export default class InventoryScene extends Phaser.Scene {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x0a1628);
+        this.cameras.main.fadeIn(200, 0, 0, 0);
 
         this.add.text(w / 2, 20, '📦 INVENTORY', { fontSize: '20px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
 

@@ -9,34 +9,22 @@ export default class BootScene extends Phaser.Scene {
         const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x0a0a1a);
 
-        console.log('[Boot] Scene started, canvas:', w, 'x', h);
-
-        this.add.text(w / 2, h / 2 - 60, '🎣', { fontSize: '64px' }).setOrigin(0.5);
-        this.add.text(w / 2, h / 2 + 10, 'HOLD FISH', {
+        this.add.text(w / 2, h / 2 - 40, '🎣', { fontSize: '64px' }).setOrigin(0.5);
+        this.add.text(w / 2, h / 2 + 30, 'HOLD FISH', {
             fontSize: '32px', color: '#4ac5ff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
-        const hasSave = SaveManager.hasSave();
-        console.log('[Boot] hasSave:', hasSave);
+        this.cameras.main.fadeIn(500, 0, 0, 0);
 
-        if (hasSave) {
-            this.add.text(w / 2, h / 2 + 50, 'Loading your save...', {
-                fontSize: '14px', color: '#888888',
-            }).setOrigin(0.5);
-
-            this.time.delayedCall(500, () => {
-                console.log('[Boot] Transitioning to FishingHubScene');
-                this.scene.start('FishingHubScene');
+        this.time.delayedCall(1500, () => {
+            this.cameras.main.fadeOut(300, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                if (SaveManager.hasSave()) {
+                    this.scene.start('FishingHubScene');
+                } else {
+                    this.scene.start('CharacterCreationScene');
+                }
             });
-        } else {
-            this.add.text(w / 2, h / 2 + 50, 'Tap to begin your journey', {
-                fontSize: '14px', color: '#888888',
-            }).setOrigin(0.5);
-
-            this.input.once('pointerdown', () => {
-                console.log('[Boot] Transitioning to CharacterCreationScene');
-                this.scene.start('CharacterCreationScene');
-            });
-        }
+        });
     }
 }

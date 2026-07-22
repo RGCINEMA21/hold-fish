@@ -8,6 +8,7 @@ export default class SettingsScene extends Phaser.Scene {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x0a1628);
+        this.cameras.main.fadeIn(200, 0, 0, 0);
         PlayerManager.load();
         const settings = PlayerManager.getSettings();
 
