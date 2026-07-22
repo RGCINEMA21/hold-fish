@@ -10,19 +10,21 @@ export default class FishingHubScene extends Phaser.Scene {
         const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x0a1628);
 
-        this.add.text(w / 2, 20, '🏘️ FISHING HUB', { fontSize: '24px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
-        this._buildCurrencyBar(w);
-        this._buildBuildings(w, h);
-    }
+        // TITLE
+        this.add.text(w / 2, 24, '🏘️ FISHING HUB', {
+            fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold',
+        }).setOrigin(0.5);
 
-    _buildCurrencyBar(w) {
+        // CURRENCY BAR
         const pd = PlayerManager.getData();
-        const y = 55;
-        this.add.text(20, y, `🧑 ${pd.character.name} Lv.${pd.progress.level}`, { fontSize: '13px', color: '#cccccc' });
-        this.add.text(20, y + 18, `🪙 ${pd.currency.gold}  💎 ${pd.currency.diamond}  🐟 ${pd.currency.hfish}  🪱 Bait: ${pd.equipment.baitAmount}`, { fontSize: '12px', color: '#aaaaaa' });
-    }
+        this.add.text(w / 2, 58, `🧑 ${pd.character.name} Lv.${pd.progress.level}`, {
+            fontSize: '13px', color: '#cccccc',
+        }).setOrigin(0.5);
+        this.add.text(w / 2, 78, `🪙 ${pd.currency.gold}  💎 ${pd.currency.diamond}  🐟 ${pd.currency.hfish}  🪱 Bait: ${pd.equipment.baitAmount}`, {
+            fontSize: '11px', color: '#aaaaaa',
+        }).setOrigin(0.5);
 
-    _buildBuildings(w, h) {
+        // BUILDINGS - 2 columns for portrait
         const buildings = [
             { label: '🎣 Fishing Dock',    scene: 'FishingScene' },
             { label: '🏪 Fish Market',     scene: 'FishMarketScene' },
@@ -31,17 +33,18 @@ export default class FishingHubScene extends Phaser.Scene {
             { label: '⚓ Harbor',           scene: 'HarborScene' },
             { label: '📖 Fish Book',       scene: 'FishBookScene' },
             { label: '📦 Inventory',       scene: 'InventoryScene' },
-            { label: '🏛️ Fish Museum',     scene: null },
+            { label: '🏛️ Museum',          scene: null },
             { label: '🍽️ Restaurant',      scene: null },
             { label: '🏢 Town Hall',       scene: null },
             { label: '⚙️ Settings',        scene: 'SettingsScene' },
         ];
 
-        const cols = 3;
-        const btnW = 260, btnH = 55, gap = 15;
-        const totalW = cols * btnW + (cols - 1) * gap;
-        const startX = (w - totalW) / 2 + btnW / 2;
-        const startY = 110;
+        const cols = 2;
+        const btnW = (w - 60) / cols;
+        const btnH = 52;
+        const gap = 10;
+        const startX = 30 + btnW / 2;
+        const startY = 115;
 
         buildings.forEach((b, i) => {
             const col = i % cols;
@@ -50,16 +53,17 @@ export default class FishingHubScene extends Phaser.Scene {
             const y = startY + row * (btnH + gap);
 
             const active = b.scene !== null;
-            const bg = this.add.rectangle(x, y, btnW, btnH, active ? 0x1a3a2a : 0x1a1a22)
+            const bg = this.add.rectangle(x, y, btnW - 4, btnH, active ? 0x1a3a2a : 0x1a1a22)
                 .setStrokeStyle(1, active ? 0x3a7a4a : 0x333333);
 
-            const label = b.label.replace(/^[^\s]+ /, '');
-            this.add.text(x, y - 8, b.label, {
-                fontSize: '15px', color: active ? '#ffffff' : '#555555', fontStyle: 'bold',
+            this.add.text(x, y - 6, b.label, {
+                fontSize: '13px', color: active ? '#ffffff' : '#555555', fontStyle: 'bold',
             }).setOrigin(0.5);
 
             if (!active) {
-                this.add.text(x, y + 12, 'Coming Soon', { fontSize: '10px', color: '#444444' }).setOrigin(0.5);
+                this.add.text(x, y + 12, 'Coming Soon', {
+                    fontSize: '9px', color: '#444444',
+                }).setOrigin(0.5);
             }
 
             if (active) {

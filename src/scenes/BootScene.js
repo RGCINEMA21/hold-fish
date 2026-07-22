@@ -3,7 +3,6 @@ import SaveManager from '../managers/SaveManager.js';
 
 /**
  * BootScene - Splash screen & flow logic
- * Cek apakah ada data save → arahkan ke scene yang tepat.
  */
 export default class BootScene extends Phaser.Scene {
 
@@ -12,16 +11,25 @@ export default class BootScene extends Phaser.Scene {
     }
 
     create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x0a0a1a);
 
-        this.add.text(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY,
-            '🎣 HOLD FISH',
-            { fontSize: '48px', color: '#4ac5ff', fontStyle: 'bold' }
-        ).setOrigin(0.5);
+        this.add.text(w / 2, h / 2 - 40, '🎣', {
+            fontSize: '64px',
+        }).setOrigin(0.5);
 
-        // Delay sebentar lalu pindah scene
+        this.add.text(w / 2, h / 2 + 30, 'HOLD FISH', {
+            fontSize: '36px',
+            color: '#4ac5ff',
+            fontStyle: 'bold',
+        }).setOrigin(0.5);
+
+        this.add.text(w / 2, h / 2 + 70, 'Casual Fishing RPG', {
+            fontSize: '14px',
+            color: '#667788',
+        }).setOrigin(0.5);
+
         this.time.delayedCall(1500, () => {
             if (SaveManager.hasSave()) {
                 this.scene.start('PreloadScene', { hasSave: true });

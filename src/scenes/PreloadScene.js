@@ -7,26 +7,33 @@ export default class PreloadScene extends Phaser.Scene {
 
     constructor() {
         super({ key: 'PreloadScene' });
+        this._hasSave = false;
+    }
+
+    init(data) {
+        this._hasSave = data?.hasSave ?? false;
     }
 
     create() {
-        this.cameras.main.setBackgroundColor(0x0a0a2a);
-
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        this.cameras.main.setBackgroundColor(0x0a0a2a);
 
-        this.add.text(w / 2, h / 2 - 30, 'Loading...', {
-            fontSize: '24px',
+        this.add.text(w / 2, h / 2 - 40, '🎣', {
+            fontSize: '48px',
+        }).setOrigin(0.5);
+
+        this.add.text(w / 2, h / 2 + 10, 'Loading...', {
+            fontSize: '20px',
             color: '#ffffff',
         }).setOrigin(0.5);
 
-        // Placeholder progress bar
-        const barBg = this.add.rectangle(w / 2, h / 2 + 20, 300, 16, 0x222233);
-        const barFill = this.add.rectangle(w / 2 - 150, h / 2 + 20, 0, 16, 0x4a9eff).setOrigin(0, 0.5);
+        const barBg = this.add.rectangle(w / 2, h / 2 + 50, 280, 14, 0x222233);
+        const barFill = this.add.rectangle(w / 2 - 140, h / 2 + 50, 0, 14, 0x4ac5ff).setOrigin(0, 0.5);
 
         this.tweens.add({
             targets: barFill,
-            width: 300,
+            width: 280,
             duration: 1200,
             ease: 'Power2',
             onComplete: () => {
@@ -36,9 +43,8 @@ export default class PreloadScene extends Phaser.Scene {
     }
 
     _goNext() {
-        const hasSave = this.scene.settings.data?.hasSave ?? false;
-        if (hasSave) {
-            this.scene.start('MainMenuScene');
+        if (this._hasSave) {
+            this.scene.start('FishingHubScene');
         } else {
             this.scene.start('CharacterCreationScene');
         }

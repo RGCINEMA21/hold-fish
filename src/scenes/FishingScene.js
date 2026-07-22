@@ -25,8 +25,6 @@ export default class FishingScene extends Phaser.Scene {
         this._buildBackButton(w, h);
     }
 
-    // ==================== HUD ====================
-
     _buildHUD(w, h) {
         const pd = PlayerManager.getData();
         const spot = DataManager.getSpotByID(pd.location.currentSpot);
@@ -34,29 +32,32 @@ export default class FishingScene extends Phaser.Scene {
         const hook = DataManager.getHookByID(pd.equipment.hook);
         const bait = DataManager.getBaitByID(pd.equipment.bait);
 
-        this.add.text(w / 2, 24, spot?.name ?? 'Unknown Spot', {
-            fontSize: '26px', color: '#4ac5ff', fontStyle: 'bold',
+        // Spot name
+        this.add.text(w / 2, 30, spot?.name ?? 'Unknown Spot', {
+            fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
-        const lx = 20, ly = 60;
-        const style = { fontSize: '14px', color: '#cccccc' };
+        // Player info panel (left)
+        const ly = 80;
+        const style = { fontSize: '13px', color: '#cccccc' };
+        this.add.text(20, ly,      `🧑 ${pd.character.name}`, style);
+        this.add.text(20, ly + 20, `Lv.${pd.progress.level}`, style);
+        this.add.text(20, ly + 40, `🪙 ${pd.currency.gold}`,   { fontSize: '13px', color: '#ffd700' });
+        this.add.text(20, ly + 60, `💎 ${pd.currency.diamond}`, { fontSize: '13px', color: '#00ccff' });
+        this.add.text(20, ly + 80, `🐟 ${pd.currency.hfish}`,  { fontSize: '13px', color: '#00ff88' });
 
-        this.add.text(lx, ly,      `🧑 ${pd.character.name}`, style);
-        this.add.text(lx, ly + 22, `Lv.${pd.progress.level}`, style);
-        this.add.text(lx, ly + 44, `🪙 ${pd.currency.gold}`,   { fontSize: '14px', color: '#ffd700' });
-        this.add.text(lx, ly + 66, `💎 ${pd.currency.diamond}`, { fontSize: '14px', color: '#00ccff' });
-        this.add.text(lx, ly + 88, `🐟 ${pd.currency.hfish}`,  { fontSize: '14px', color: '#00ff88' });
-
-        const rx = w - 200;
+        // Equipment panel (right)
+        const rx = w - 180;
         this.add.text(rx, ly,      `🎣 ${rod?.name ?? '-'}`, style);
-        this.add.text(rx, ly + 22, `🪝 ${hook?.name ?? '-'}`, style);
-        this.add.text(rx, ly + 44, `🪱 ${bait?.name ?? '-'}`, style);
-        this.add.text(rx, ly + 66, `📦 Bait: ${pd.equipment.baitAmount}`, style);
+        this.add.text(rx, ly + 20, `🪝 ${hook?.name ?? '-'}`, style);
+        this.add.text(rx, ly + 40, `🪱 ${bait?.name ?? '-'}`, style);
+        this.add.text(rx, ly + 60, `📦 Bait: ${pd.equipment.baitAmount}`, style);
 
-        const cx = w / 2;
-        this.infoTexts.weather = this.add.text(cx, ly + 80, '', { fontSize: '13px', color: '#aabbcc' }).setOrigin(0.5);
-        this.infoTexts.season  = this.add.text(cx, ly + 98, '', { fontSize: '13px', color: '#aabbcc' }).setOrigin(0.5);
-        this.infoTexts.time    = this.add.text(cx, ly + 116,'', { fontSize: '13px', color: '#aabbcc' }).setOrigin(0.5);
+        // Environment info
+        const cy = ly + 110;
+        this.infoTexts.weather = this.add.text(w / 2, cy,      '', { fontSize: '12px', color: '#aabbcc' }).setOrigin(0.5);
+        this.infoTexts.season  = this.add.text(w / 2, cy + 18, '', { fontSize: '12px', color: '#aabbcc' }).setOrigin(0.5);
+        this.infoTexts.time    = this.add.text(w / 2, cy + 36, '', { fontSize: '12px', color: '#aabbcc' }).setOrigin(0.5);
 
         this._updateEnvironmentInfo();
     }
@@ -65,7 +66,6 @@ export default class FishingScene extends Phaser.Scene {
         const time = FishingSystem._getCurrentTime();
         const weather = FishingSystem._getCurrentWeather();
         const season = FishingSystem._getCurrentSeason();
-
         const weatherData = DataManager.getWeatherByID(weather);
         const seasonData  = DataManager.getSeasonByID(season);
 
@@ -74,14 +74,11 @@ export default class FishingScene extends Phaser.Scene {
         this.infoTexts.time.setText(`🕐 Time: ${time}`);
     }
 
-    // ==================== START BUTTON ====================
-
     _buildStartButton(w, h) {
-        this.startBtn = this.add.text(w / 2, h - 100, '🎣  START FISHING', {
-            fontSize: '22px',
-            color: '#ffffff',
+        this.startBtn = this.add.text(w / 2, h - 120, '🎣  START FISHING', {
+            fontSize: '20px', color: '#ffffff',
             backgroundColor: '#2a7a3a',
-            padding: { x: 32, y: 14 },
+            padding: { x: 28, y: 12 },
             fontStyle: 'bold',
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -94,16 +91,12 @@ export default class FishingScene extends Phaser.Scene {
         });
     }
 
-    // ==================== BACK BUTTON ====================
-
     _buildBackButton(w, h) {
         const backBtn = this.add.text(20, h - 30, '← Back', {
-            fontSize: '16px', color: '#888888',
+            fontSize: '15px', color: '#888888',
         }).setInteractive({ useHandCursor: true });
         backBtn.on('pointerdown', () => this.scene.start('FishingHubScene'));
     }
-
-    // ==================== FISHING LOGIC ====================
 
     _onStartFishing() {
         if (this.isFishing) return;
@@ -115,7 +108,6 @@ export default class FishingScene extends Phaser.Scene {
 
         PlayerManager.useBait();
         this.isFishing = true;
-
         this.startBtn.setStyle({ backgroundColor: '#333333' });
         this.startBtn.setText('⏳ Fishing...');
         this.startBtn.disableInteractive();
@@ -129,74 +121,61 @@ export default class FishingScene extends Phaser.Scene {
         const result = FishingSystem.processCatch();
 
         if (result.success) {
-            const fish = result.fish;
-            const weight = result.weight;
-
-            // Gunakan InventoryManager agar type:'fish' ter-include
-            InventoryManager.addFish(fish, weight);
-
-            // Tambah ke collection
-            PlayerManager.addToCollection(fish.id, weight);
-
-            // Update stats
-            PlayerManager.addFishStat(weight);
-
-            // Tambah EXP
-            const expGain = Math.floor(fish.price / 2) + 10;
+            InventoryManager.addFish(result.fish, result.weight);
+            PlayerManager.addToCollection(result.fish.id, result.weight);
+            PlayerManager.addFishStat(result.weight);
+            const expGain = Math.floor(result.fish.price / 2) + 10;
             PlayerManager.addExp(expGain);
-
-            // Tampilkan popup hasil (OK button akan handle restart)
-            this._showCatchPopup(fish, weight, result.isNew);
+            this._showCatchPopup(result.fish, result.weight, result.isNew);
         } else {
             this._showMessage(result.message);
         }
     }
 
-    // ==================== POPUPS ====================
-
     _showCatchPopup(fish, weight, isNew) {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-
         const rarityColors = { common: '#aaaaaa', uncommon: '#55cc55', rare: '#5599ff', epic: '#aa55ff', legendary: '#ffaa00' };
 
         const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.7).setInteractive();
-        const panel = this.add.rectangle(w / 2, h / 2, 360, 260, 0x1a2a3a).setStrokeStyle(2, 0x4a9eff);
+        const panel = this.add.rectangle(w / 2, h / 2, w - 60, 280, 0x1a2a3a).setStrokeStyle(2, 0x4a9eff);
 
-        const title = this.add.text(w / 2, h / 2 - 100, isNew ? '🎉 NEW SPECIES DISCOVERED!' : '🐟 Fish Caught!', {
-            fontSize: '20px', color: isNew ? '#ffd700' : '#ffffff', fontStyle: 'bold',
-        }).setOrigin(0.5);
+        const elements = [];
+        let y = h / 2 - 110;
 
-        const nameText = this.add.text(w / 2, h / 2 - 65, fish.name, {
-            fontSize: '24px', color: rarityColors[fish.rarity] || '#ffffff', fontStyle: 'bold',
-        }).setOrigin(0.5);
+        elements.push(this.add.text(w / 2, y, isNew ? '🎉 NEW SPECIES!' : '🐟 Fish Caught!', {
+            fontSize: '18px', color: isNew ? '#ffd700' : '#ffffff', fontStyle: 'bold',
+        }).setOrigin(0.5)); y += 30;
 
-        const infoText = this.add.text(w / 2, h / 2 - 38, `${fish.rarity.toUpperCase()} · ${weight.toFixed(2)} kg`, {
-            fontSize: '14px', color: '#cccccc',
-        }).setOrigin(0.5);
+        elements.push(this.add.text(w / 2, y, fish.name, {
+            fontSize: '22px', color: rarityColors[fish.rarity] || '#ffffff', fontStyle: 'bold',
+        }).setOrigin(0.5)); y += 28;
 
-        const priceText = this.add.text(w / 2, h / 2 - 15, `Sell Price: 🪙 ${fish.price}`, {
-            fontSize: '16px', color: '#ffd700',
-        }).setOrigin(0.5);
+        elements.push(this.add.text(w / 2, y, `${fish.rarity.toUpperCase()} · ${weight.toFixed(2)} kg`, {
+            fontSize: '13px', color: '#cccccc',
+        }).setOrigin(0.5)); y += 22;
 
-        const descText = this.add.text(w / 2, h / 2 + 12, fish.description, {
-            fontSize: '12px', color: '#888888', wordWrap: { width: 300 }, align: 'center',
-        }).setOrigin(0.5);
+        elements.push(this.add.text(w / 2, y, `Sell Price: 🪙 ${fish.price}`, {
+            fontSize: '14px', color: '#ffd700',
+        }).setOrigin(0.5)); y += 20;
+
+        elements.push(this.add.text(w / 2, y, fish.description, {
+            fontSize: '11px', color: '#888888', wordWrap: { width: w - 100 }, align: 'center',
+        }).setOrigin(0.5)); y += 30;
 
         const expGain = Math.floor(fish.price / 2) + 10;
-        const expText = this.add.text(w / 2, h / 2 + 42, `+${expGain} EXP`, {
-            fontSize: '14px', color: '#00ff88',
-        }).setOrigin(0.5);
+        elements.push(this.add.text(w / 2, y, `+${expGain} EXP`, {
+            fontSize: '13px', color: '#00ff88',
+        }).setOrigin(0.5));
 
-        const okBtn = this.add.text(w / 2, h / 2 + 80, 'OK', {
-            fontSize: '18px', color: '#ffffff', backgroundColor: '#2a7a3a',
-            padding: { x: 40, y: 10 },
+        const okBtn = this.add.text(w / 2, h / 2 + 110, 'OK', {
+            fontSize: '16px', color: '#ffffff', backgroundColor: '#2a7a3a',
+            padding: { x: 36, y: 10 },
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         okBtn.on('pointerdown', () => {
-            dim.destroy(); panel.destroy(); title.destroy();
-            nameText.destroy(); infoText.destroy(); priceText.destroy();
-            descText.destroy(); expText.destroy(); okBtn.destroy();
+            dim.destroy(); panel.destroy(); okBtn.destroy();
+            elements.forEach(e => e.destroy());
             this.scene.restart();
         });
     }
@@ -206,20 +185,19 @@ export default class FishingScene extends Phaser.Scene {
         const h = this.cameras.main.height;
 
         const dim = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.6).setInteractive();
-        const panel = this.add.rectangle(w / 2, h / 2, 320, 120, 0x1a2a3a).setStrokeStyle(2, 0xff6b6b);
+        const panel = this.add.rectangle(w / 2, h / 2, w - 80, 120, 0x1a2a3a).setStrokeStyle(2, 0xff6b6b);
 
         const text = this.add.text(w / 2, h / 2 - 15, msg, {
-            fontSize: '18px', color: '#ff6b6b', fontStyle: 'bold',
+            fontSize: '16px', color: '#ff6b6b', fontStyle: 'bold',
         }).setOrigin(0.5);
 
         const okBtn = this.add.text(w / 2, h / 2 + 30, 'OK', {
-            fontSize: '16px', color: '#ffffff', backgroundColor: '#aa3333',
-            padding: { x: 30, y: 8 },
+            fontSize: '14px', color: '#ffffff', backgroundColor: '#aa3333',
+            padding: { x: 28, y: 8 },
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         okBtn.on('pointerdown', () => {
             dim.destroy(); panel.destroy(); text.destroy(); okBtn.destroy();
-            // Re-enable fishing after dismissing error
             this.isFishing = false;
             this.startBtn.setStyle({ backgroundColor: '#2a7a3a' });
             this.startBtn.setText('🎣  START FISHING');
