@@ -5,26 +5,37 @@ export default class FishingHubScene extends Phaser.Scene {
     constructor() { super({ key: 'FishingHubScene' }); }
 
     create() {
-        PlayerManager.load();
+        try {
+            PlayerManager.load();
+        } catch (e) {
+            console.warn('[FishingHub] Failed to load player:', e);
+        }
+
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x0a1628);
 
-        // TITLE
         this.add.text(w / 2, 24, '🏘️ FISHING HUB', {
             fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold',
         }).setOrigin(0.5);
 
-        // CURRENCY BAR
+        // Player info - safe access
         const pd = PlayerManager.getData();
-        this.add.text(w / 2, 58, `🧑 ${pd.character.name} Lv.${pd.progress.level}`, {
+        const name = pd?.character?.name ?? 'Fisher';
+        const level = pd?.progress?.level ?? 1;
+        const gold = pd?.currency?.gold ?? 0;
+        const diamond = pd?.currency?.diamond ?? 0;
+        const hfish = pd?.currency?.hfish ?? 0;
+        const baitAmt = pd?.equipment?.baitAmount ?? 0;
+
+        this.add.text(w / 2, 58, `🧑 ${name} Lv.${level}`, {
             fontSize: '13px', color: '#cccccc',
         }).setOrigin(0.5);
-        this.add.text(w / 2, 78, `🪙 ${pd.currency.gold}  💎 ${pd.currency.diamond}  🐟 ${pd.currency.hfish}  🪱 Bait: ${pd.equipment.baitAmount}`, {
+        this.add.text(w / 2, 78, `🪙 ${gold}  💎 ${diamond}  🐟 ${hfish}  🪱 ${baitAmt}`, {
             fontSize: '11px', color: '#aaaaaa',
         }).setOrigin(0.5);
 
-        // BUILDINGS - 2 columns for portrait
+        // Buildings - 2 columns for portrait
         const buildings = [
             { label: '🎣 Fishing Dock',    scene: 'FishingScene' },
             { label: '🏪 Fish Market',     scene: 'FishMarketScene' },
@@ -70,7 +81,13 @@ export default class FishingHubScene extends Phaser.Scene {
                 bg.setInteractive({ useHandCursor: true });
                 bg.on('pointerover', () => bg.setFillStyle(0x2a5a3a));
                 bg.on('pointerout', () => bg.setFillStyle(0x1a3a2a));
-                bg.on('pointerdown', () => this.scene.start(b.scene));
+                bg.on('pointerdown', () => {
+                    try {
+                        this.scene.start(b.scene);
+                    } catch (e) {
+                        console.error('[FishingHub] Failed to start scene:', b.scene, e);
+                    }
+                });
             }
         });
     }
