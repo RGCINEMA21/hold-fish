@@ -18,8 +18,7 @@ export default class FishingScene extends Phaser.Scene {
 
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        this.cameras.main.setBackgroundColor(0x0a1628);
-        this.cameras.main.fadeIn(200, 0, 0, 0);
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
 
         this._buildHUD(w, h);
         this._buildStartButton(w, h);

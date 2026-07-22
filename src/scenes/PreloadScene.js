@@ -17,7 +17,7 @@ export default class PreloadScene extends Phaser.Scene {
     create() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        this.cameras.main.setBackgroundColor(0x0a0a2a);
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
 
         this.add.text(w / 2, h / 2 - 40, '🎣', {
             fontSize: '48px',

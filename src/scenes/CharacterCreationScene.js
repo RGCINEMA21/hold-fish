@@ -13,14 +13,14 @@ export default class CharacterCreationScene extends Phaser.Scene {
     create() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        this.cameras.main.setBackgroundColor(0x0a1628);
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
 
         this.add.text(w / 2, 50, '🎣 HOLD FISH', { fontSize: '28px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
-        this.add.text(w / 2, 85, 'Create Your Character', { fontSize: '14px', color: '#8899aa' }).setOrigin(0.5);
+        this.add.text(w / 2, 85, 'Create Your Character', { fontSize: '14px', color: '#ffffff' }).setOrigin(0.5);
 
         this.add.text(w / 2, 140, 'Character Name', { fontSize: '14px', color: '#cccccc' }).setOrigin(0.5);
         this.nameDisplay = this.add.text(w / 2, 175, 'Tap to enter name...', {
-            fontSize: '16px', color: '#888888', backgroundColor: '#1a2a3a',
+            fontSize: '16px', color: '#888888', backgroundColor: '#2a3a4a',
             padding: { x: 12, y: 10 }, fixedWidth: 280, align: 'center',
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         this.nameDisplay.on('pointerdown', () => {
@@ -38,7 +38,7 @@ export default class CharacterCreationScene extends Phaser.Scene {
             padding: { x: 16, y: 8 },
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         this.femaleBtn = this.add.text(w / 2 + 70, 265, '♀ Female', {
-            fontSize: '15px', color: '#ffffff', backgroundColor: '#2a3a4a',
+            fontSize: '15px', color: '#ffffff', backgroundColor: '#3a4a5a',
             padding: { x: 16, y: 8 },
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         this.maleBtn.on('pointerdown', () => this._setGender('male'));
@@ -49,13 +49,13 @@ export default class CharacterCreationScene extends Phaser.Scene {
         this.avatarBgs = [];
         [0, 1, 2, 3].forEach((idx) => {
             const x = w / 2 - 90 + idx * 60;
-            const bg = this.add.rectangle(x, 370, 48, 48, colors[idx], 0.3)
-                .setStrokeStyle(2, idx === 0 ? 0x4ac5ff : 0x334455)
+            const bg = this.add.rectangle(x, 370, 48, 48, colors[idx], 0.4)
+                .setStrokeStyle(2, idx === 0 ? 0xffffff : 0x555555)
                 .setInteractive({ useHandCursor: true });
             this.add.text(x, 370, `A${idx + 1}`, { fontSize: '16px', color: '#fff' }).setOrigin(0.5);
             bg.on('pointerdown', () => {
                 this.selectedAvatar = idx;
-                this.avatarBgs.forEach((b, j) => b.setStrokeStyle(2, j === idx ? 0x4ac5ff : 0x334455));
+                this.avatarBgs.forEach((b, j) => b.setStrokeStyle(2, j === idx ? 0xffffff : 0x555555));
             });
             this.avatarBgs.push(bg);
         });
@@ -71,8 +71,8 @@ export default class CharacterCreationScene extends Phaser.Scene {
 
     _setGender(g) {
         this.selectedGender = g;
-        this.maleBtn.setStyle({ backgroundColor: g === 'male' ? '#4a9eff' : '#2a3a4a' });
-        this.femaleBtn.setStyle({ backgroundColor: g === 'female' ? '#4a9eff' : '#2a3a4a' });
+        this.maleBtn.setStyle({ backgroundColor: g === 'male' ? '#4a9eff' : '#3a4a5a' });
+        this.femaleBtn.setStyle({ backgroundColor: g === 'female' ? '#4a9eff' : '#3a4a5a' });
     }
 
     _onStart() {
@@ -89,10 +89,6 @@ export default class CharacterCreationScene extends Phaser.Scene {
         });
         SaveManager.save(player);
         PlayerManager.load();
-
-        this.cameras.main.fadeOut(300, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('FishingHubScene');
-        });
+        this.scene.start('FishingHubScene');
     }
 }

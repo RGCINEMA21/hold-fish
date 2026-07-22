@@ -9,8 +9,7 @@ export default class BaitShopScene extends Phaser.Scene {
     create() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        this.cameras.main.setBackgroundColor(0x0a1628);
-        this.cameras.main.fadeIn(200, 0, 0, 0);
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
         this.add.text(w / 2, 20, '🪱 BAIT SHOP', { fontSize: '20px', color: '#55cc55', fontStyle: 'bold' }).setOrigin(0.5);
         this.add.text(w / 2, 48, `Gold: 🪙 ${PlayerManager.getGold()}`, { fontSize: '13px', color: '#ffd700' }).setOrigin(0.5);
 

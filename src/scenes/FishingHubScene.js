@@ -9,8 +9,7 @@ export default class FishingHubScene extends Phaser.Scene {
 
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        this.cameras.main.setBackgroundColor(0x0a1628);
-        this.cameras.main.fadeIn(300, 0, 0, 0);
+        this.cameras.main.setBackgroundColor(0x1a2a3a);
 
         this.add.text(w / 2, 24, '🏘️ FISHING HUB', {
             fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold',
@@ -25,10 +24,10 @@ export default class FishingHubScene extends Phaser.Scene {
         const baitAmt = pd?.equipment?.baitAmount ?? 0;
 
         this.add.text(w / 2, 56, `🧑 ${name} Lv.${level}`, {
-            fontSize: '13px', color: '#cccccc',
+            fontSize: '13px', color: '#ffffff',
         }).setOrigin(0.5);
         this.add.text(w / 2, 76, `🪙 ${gold}  💎 ${diamond}  🐟 ${hfish}  🪱 ${baitAmt}`, {
-            fontSize: '11px', color: '#aaaaaa',
+            fontSize: '11px', color: '#cccccc',
         }).setOrigin(0.5);
 
         const buildings = [
@@ -59,21 +58,21 @@ export default class FishingHubScene extends Phaser.Scene {
             if (y > h - 50) return;
 
             const active = b.scene !== null;
-            const bg = this.add.rectangle(x, y, btnW - 4, btnH, active ? 0x1a3a2a : 0x1a1a22)
-                .setStrokeStyle(1, active ? 0x3a7a4a : 0x333333);
+            const bg = this.add.rectangle(x, y, btnW - 4, btnH, active ? 0x2a4a3a : 0x2a2a3a)
+                .setStrokeStyle(2, active ? 0x4a9a5a : 0x555555);
 
             this.add.text(x, y - 5, b.label, {
-                fontSize: '13px', color: active ? '#ffffff' : '#555555', fontStyle: 'bold',
+                fontSize: '13px', color: active ? '#ffffff' : '#888888', fontStyle: 'bold',
             }).setOrigin(0.5);
 
             if (!active) {
-                this.add.text(x, y + 12, 'Soon', { fontSize: '9px', color: '#444444' }).setOrigin(0.5);
+                this.add.text(x, y + 12, 'Soon', { fontSize: '9px', color: '#666666' }).setOrigin(0.5);
             }
 
             if (active) {
                 bg.setInteractive({ useHandCursor: true });
-                bg.on('pointerover', () => bg.setFillStyle(0x2a5a3a));
-                bg.on('pointerout', () => bg.setFillStyle(0x1a3a2a));
+                bg.on('pointerover', () => bg.setFillStyle(0x3a6a4a));
+                bg.on('pointerout', () => bg.setFillStyle(0x2a4a3a));
                 bg.on('pointerdown', () => this.scene.start(b.scene));
             }
         });
