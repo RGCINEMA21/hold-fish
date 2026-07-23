@@ -26,20 +26,35 @@ function getPlayer() { return playerData; }
 // ===== BOOT SCENE =====
 class BootScene extends Phaser.Scene {
     constructor() { super('BootScene'); }
+    preload() {
+        this.load.image('holdfish_logo', 'assets/images/logo/hold-fish-logo.png');
+    }
     create() {
         var w = this.cameras.main.width, h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x1a2a3a);
-        this.add.text(w/2, h/2 - 50, '\uD83C\uDFA3', { fontSize: '72px' }).setOrigin(0.5);
-        this.add.text(w/2, h/2 + 30, 'HOLD FISH', { fontSize: '36px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
-
-        var startBtn = this.add.rectangle(w/2, h/2 + 120, 300, 60, 0x2a7a3a).setStrokeStyle(3, 0x4ac5ff);
-        startBtn.setInteractive({ useHandCursor: true });
-        this.add.text(w/2, h/2 + 120, 'TAP TO START', { fontSize: '22px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-
+        var logoY = h / 2 - 60;
         var self = this;
-        startBtn.on('pointerdown', function() { self.goNext(); });
-        // Also allow tapping anywhere
-        this.input.on('pointerdown', function() { self.goNext(); });
+
+        if (this.textures.exists('holdfish_logo')) {
+            this.logo = this.add.image(w / 2, logoY, 'holdfish_logo').setOrigin(0.5).setAlpha(0).setScale(0.5);
+            this.tweens.add({ targets: this.logo, alpha: 1, scale: 1, duration: 800, ease: 'Back.easeOut' });
+        } else {
+            this.add.text(w/2, logoY - 20, '\uD83C\uDFA3', { fontSize: '64px' }).setOrigin(0.5);
+            var fb = this.add.text(w/2, logoY + 40, 'HOLD FISH', { fontSize: '32px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5).setAlpha(0);
+            this.tweens.add({ targets: fb, alpha: 1, duration: 600 });
+        }
+
+        this.tapText = this.add.text(w/2, h/2 + 120, '', { fontSize: '20px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5).setAlpha(0);
+
+        this.time.delayedCall(1200, function() {
+            self.tapText.setText('TAP TO START');
+            self.tweens.add({ targets: self.tapText, alpha: 1, duration: 400 });
+            self.tweens.add({ targets: self.tapText, alpha: 0.3, duration: 600, yoyo: true, repeat: -1 });
+        });
+
+        this.time.delayedCall(1800, function() {
+            self.input.on('pointerdown', function() { self.goNext(); });
+        });
     }
     goNext() {
         this.scene.start(hasSave() ? 'HubScene' : 'CreateScene');
@@ -127,14 +142,18 @@ class HubScene extends Phaser.Scene {
         var w = this.cameras.main.width, h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x1a2a3a);
 
-        this.add.text(w/2, 30, '\uD83C\uDFE0 FISHING HUB', { fontSize: '26px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+        if (this.textures.exists('holdfish_logo')) {
+            this.add.image(w/2, 40, 'holdfish_logo').setOrigin(0.5).setDisplaySize(Math.min(w * 0.45, 220), Math.min(w * 0.25, 110));
+        } else {
+            this.add.text(w/2, 30, '\uD83C\uDFE0 FISHING HUB', { fontSize: '26px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+        }
 
         var name = pd ? pd.character.name : 'Fisher';
         var level = pd ? pd.progress.level : 1;
         var gold = pd ? pd.currency.gold : 0;
 
-        this.add.text(w/2, 70, name + '  Lv.' + level, { fontSize: '16px', color: '#ffffff' }).setOrigin(0.5);
-        this.add.text(w/2, 95, '\uD83E\uDE99 ' + gold + ' Gold', { fontSize: '14px', color: '#ffd700' }).setOrigin(0.5);
+        this.add.text(w/2, 85, name + '  Lv.' + level, { fontSize: '16px', color: '#ffffff' }).setOrigin(0.5);
+        this.add.text(w/2, 110, '\uD83E\uDE99 ' + gold + ' Gold', { fontSize: '14px', color: '#ffd700' }).setOrigin(0.5);
 
         var labels = [
             '\uD83C\uDFA3  Fishing Dock',
@@ -183,3 +202,4 @@ new Phaser.Game({
     },
     scene: [BootScene, CreateScene, HubScene],
 });
+        var by = 165 + row * 70;

@@ -1317,25 +1317,65 @@ import Phaser from 'phaser';
 class BootScene extends Phaser.Scene {
     constructor() { super({ key: 'BootScene' }); }
 
+    preload() {
+        this.load.image('holdfish_logo', 'assets/images/logo/hold-fish-logo.png');
+    }
+
     create() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x1a2a3a);
 
-        this.add.text(w / 2, h / 2 - 40, '🎣', { fontSize: '64px' }).setOrigin(0.5);
-        this.add.text(w / 2, h / 2 + 30, 'HOLD FISH', {
-            fontSize: '32px', color: '#4ac5ff', fontStyle: 'bold',
-        }).setOrigin(0.5);
-        this.add.text(w / 2, h / 2 + 70, 'Loading...', {
-            fontSize: '16px', color: '#ffffff',
-        }).setOrigin(0.5);
+        const logoY = h / 2 - 60;
 
-        this.time.delayedCall(1500, () => {
+        if (this.textures.exists('holdfish_logo')) {
+            this.logo = this.add.image(w / 2, logoY, 'holdfish_logo')
+                .setOrigin(0.5)
+                .setAlpha(0)
+                .setScale(0.5);
+
+            this.tweens.add({
+                targets: this.logo,
+                alpha: 1,
+                scale: 1,
+                duration: 800,
+                ease: 'Back.easeOut',
+            });
+        } else {
+            this.add.text(w / 2, logoY - 20, '🎣', { fontSize: '64px' }).setOrigin(0.5);
+            this.add.text(w / 2, logoY + 40, 'HOLD FISH', {
+                fontSize: '32px', color: '#4ac5ff', fontStyle: 'bold',
+            }).setOrigin(0.5).setAlpha(0).setName('fallbackTitle');
+            const fb = this.children.getByName('fallbackTitle');
+            this.tweens.add({ targets: fb, alpha: 1, duration: 600 });
+        }
+
+        this.tapText = this.add.text(w / 2, h / 2 + 120, '', {
+            fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+        }).setOrigin(0.5).setAlpha(0);
+
+        const goNext = () => {
             if (SaveManager.hasSave()) {
                 this.scene.start('FishingHubScene');
             } else {
                 this.scene.start('CharacterCreationScene');
             }
+        };
+
+        this.time.delayedCall(1200, () => {
+            this.tapText.setText('TAP TO START');
+            this.tweens.add({ targets: this.tapText, alpha: 1, duration: 400 });
+            this.tweens.add({
+                targets: this.tapText,
+                alpha: 0.3,
+                duration: 600,
+                yoyo: true,
+                repeat: -1,
+            });
+        });
+
+        this.time.delayedCall(1800, () => {
+            this.input.on('pointerdown', goNext);
         });
     }
 }
@@ -1490,9 +1530,15 @@ class FishingHubScene extends Phaser.Scene {
         const h = this.cameras.main.height;
         this.cameras.main.setBackgroundColor(0x1a2a3a);
 
-        this.add.text(w / 2, 24, '🏘️ FISHING HUB', {
-            fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold',
-        }).setOrigin(0.5);
+        if (this.textures.exists('holdfish_logo')) {
+            this.add.image(w / 2, 40, 'holdfish_logo')
+                .setOrigin(0.5)
+                .setDisplaySize(Math.min(w * 0.45, 220), Math.min(w * 0.25, 110));
+        } else {
+            this.add.text(w / 2, 30, '🏘️ FISHING HUB', {
+                fontSize: '22px', color: '#4ac5ff', fontStyle: 'bold',
+            }).setOrigin(0.5);
+        }
 
         const pd = PlayerManager.getData();
         const name = pd?.character?.name ?? 'Fisher';
@@ -1502,10 +1548,10 @@ class FishingHubScene extends Phaser.Scene {
         const hfish = pd?.currency?.hfish ?? 0;
         const baitAmt = pd?.equipment?.baitAmount ?? 0;
 
-        this.add.text(w / 2, 56, `🧑 ${name} Lv.${level}`, {
+        this.add.text(w / 2, 85, `🧑 ${name} Lv.${level}`, {
             fontSize: '13px', color: '#ffffff',
         }).setOrigin(0.5);
-        this.add.text(w / 2, 76, `🪙 ${gold}  💎 ${diamond}  🐟 ${hfish}  🪱 ${baitAmt}`, {
+        this.add.text(w / 2, 105, `🪙 ${gold}  💎 ${diamond}  🐟 ${hfish}  🪱 ${baitAmt}`, {
             fontSize: '11px', color: '#cccccc',
         }).setOrigin(0.5);
 
@@ -2387,3 +2433,4 @@ new Phaser.Game({
 </script>
 </body>
 </html>
+        const startY = 135;
