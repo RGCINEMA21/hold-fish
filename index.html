@@ -37,12 +37,21 @@
     var BootScene = new Phaser.Class({
         Extends: Phaser.Scene,
         initialize: function() { Phaser.Scene.call(this, { key: 'BootScene' }); },
+        preload: function() {
+            this.load.image('holdfish_logo', 'assets/images/logo/hold-fish-logo.png');
+        },
         create: function() {
             var w = this.cameras.main.width, h = this.cameras.main.height;
             this.cameras.main.setBackgroundColor(0x1a2a3a);
-            this.add.text(w/2, h/2-60, '\uD83C\uDFA3', { fontSize: '72px' }).setOrigin(0.5);
-            this.add.text(w/2, h/2+20, 'HOLD FISH', { fontSize: '36px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
-            this.add.text(w/2, h/2+60, 'Casual Fishing RPG', { fontSize: '14px', color: '#667788' }).setOrigin(0.5);
+            var logoY = h/2 - 80;
+            if (this.textures.exists('holdfish_logo')) {
+                var logo = this.add.image(w/2, logoY, 'holdfish_logo').setOrigin(0.5).setAlpha(0).setScale(0.5);
+                this.tweens.add({ targets: logo, alpha: 1, scale: 1, duration: 800, ease: 'Back.easeOut' });
+            } else {
+                this.add.text(w/2, logoY-20, '\uD83C\uDFA3', { fontSize: '72px' }).setOrigin(0.5);
+                this.add.text(w/2, logoY+40, 'HOLD FISH', { fontSize: '36px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+            }
+            this.add.text(w/2, h/2+40, 'Casual Fishing RPG', { fontSize: '14px', color: '#667788' }).setOrigin(0.5);
             var btn = this.add.rectangle(w/2, h/2+130, 300, 60, 0x2a7a3a).setStrokeStyle(3, 0x4ac5ff);
             btn.setInteractive({ useHandCursor: true });
             this.add.text(w/2, h/2+130, 'TAP TO START', { fontSize: '22px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
@@ -114,9 +123,13 @@
             var nm = player ? player.character.name : 'Fisher';
             var lv = player ? player.progress.level : 1;
             var gd = player ? player.currency.gold : 0;
-            this.add.text(w/2, 30, '\uD83C\uDFE0 FISHING HUB', { fontSize: '26px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
-            this.add.text(w/2, 70, nm + '  Lv.' + lv, { fontSize: '16px', color: '#fff' }).setOrigin(0.5);
-            this.add.text(w/2, 95, '\uD83E\uDE99 ' + gd + ' Gold', { fontSize: '14px', color: '#ffd700' }).setOrigin(0.5);
+            if (this.textures.exists('holdfish_logo')) {
+                this.add.image(w/2, 40, 'holdfish_logo').setOrigin(0.5).setDisplaySize(Math.min(w*0.45, 220), Math.min(w*0.25, 110));
+            } else {
+                this.add.text(w/2, 30, '\uD83C\uDFE0 FISHING HUB', { fontSize: '26px', color: '#4ac5ff', fontStyle: 'bold' }).setOrigin(0.5);
+            }
+            this.add.text(w/2, 80, nm + '  Lv.' + lv, { fontSize: '16px', color: '#fff' }).setOrigin(0.5);
+            this.add.text(w/2, 105, '\uD83E\uDE99 ' + gd + ' Gold', { fontSize: '14px', color: '#ffd700' }).setOrigin(0.5);
             var labels = ['\uD83C\uDFA3 Fishing Dock','\uD83C\uDFEA Fish Market','\uD83E\uDEB1 Bait Shop','\uD83D\uDD27 Rod Workshop','\u2693 Harbor','\uD83D\uDCD6 Fish Book','\uD83D\uDCE6 Inventory','\u2699\uFE0F Settings'];
             var cols = 2, bw = (w-60)/cols, self = this;
             for (var i = 0; i < labels.length; i++) {
