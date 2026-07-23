@@ -28,7 +28,6 @@ const achievementData = [
     { id: 'upgrade_rod_10', name: 'Rod Master', description: 'Upgrade rod to Lv10', reward: { gold: 800 }, icon: '🔧' },
     { id: 'biggest_10kg', name: 'Big Catch', description: 'Catch a fish over 10kg', reward: { gold: 200 }, icon: '⚖️' },
 ];
-var achievementData;
 
 const baitData = [
     { id: 'worm_bait',     name: 'Worm Bait',     price: 10,   preferredFish: ['common_carp', 'catfish', 'bluegill'], rarityBonus: 0,   description: 'Cacing umpan dasar.' },
@@ -39,7 +38,6 @@ const baitData = [
     { id: 'golden_lure',   name: 'Golden Lure',   price: 200,  preferredFish: ['golden_carp', 'crystal_koi', 'moon_whisker'], rarityBonus: 25, description: 'Umpan emas langka.' },
     { id: 'bread_bait',    name: 'Bread Bait',    price: 5,    preferredFish: ['common_carp', 'minnow'],               rarityBonus: 0,   description: 'Roti tawar sederhana.' },
 ];
-var baitData;
 
 const boatData = [
     { id: 'none',            name: 'No Boat',          speed: 0,   unlockSpot: ['village_pond', 'river', 'lake', 'waterfall', 'beach'], price: 0,     description: 'Tidak menggunakan perahu.' },
@@ -48,7 +46,6 @@ const boatData = [
     { id: 'fishing_trawler', name: 'Fishing Trawler',  speed: 15,  unlockSpot: ['deep_ocean', 'volcano_lake'],             price: 30000, description: 'Kapal penangkap ikan profesional.' },
     { id: 'mystic_boat',     name: 'Mystic Boat',      speed: 20,  unlockSpot: ['crystal_lake'],                          price: 80000, description: 'Perahu mistis yang bisa menembus kabut.' },
 ];
-var boatData;
 
 const currencyData = [
     { id: 'gold',            name: 'Gold',            icon: '🪙', description: 'Mata uang utama.',           canTrade: true },
@@ -57,7 +54,6 @@ const currencyData = [
     { id: 'ancient_pearl',   name: 'Ancient Pearl',   icon: '🔮', description: 'Mutlak kuno dari laut dalam.', canTrade: true },
     { id: 'fishing_point',   name: 'Fishing Point',   icon: '⭐', description: 'Poin dari menyelesaikan quest.', canTrade: false },
 ];
-var currencyData;
 
 /**
  * fishData.js - Database seluruh ikan
@@ -459,7 +455,6 @@ const fishData = [
     },
 ];
 
-var fishData;
 
 const hookData = [
     { id: 'basic_hook',  name: 'Basic Hook',  price: 0,    catchRate: 50,  durability: 50,  description: 'Kail dasar.' },
@@ -468,28 +463,24 @@ const hookData = [
     { id: 'gold_hook',   name: 'Gold Hook',   price: 1500, catchRate: 80,  durability: 100, description: 'Kail emas yang menarik ikan langka.' },
     { id: 'diamond_hook',name: 'Diamond Hook', price: 5000, catchRate: 90,  durability: 200, description: 'Kail berlian yang hampir tidak bisa patah.' },
 ];
-var hookData;
 
 const itemData = [
     { id: 'health_potion', name: 'Health Potion', category: 'consumable', price: 50, description: 'Restore 50 HP.' },
     { id: 'luck_charm', name: 'Luck Charm', category: 'accessory', price: 500, description: 'Increase luck by 10%.' },
     { id: 'treasure_map', name: 'Treasure Map', category: 'special', price: 200, description: 'Reveals a hidden spot.' },
 ];
-var itemData;
 
 const museumData = [
     { id: 'donate_common', name: 'Common Exhibit', fishRequired: 'common_carp', reward: { museumPoint: 10, title: null, decoration: null } },
     { id: 'donate_rare', name: 'Rare Exhibit', fishRequired: 'tuna', reward: { museumPoint: 50, title: 'Ocean Expert', decoration: 'Trophy Fish' } },
     { id: 'donate_legendary', name: 'Legendary Exhibit', fishRequired: 'dragon_fish', reward: { museumPoint: 200, title: 'Dragon Tamer', decoration: 'Dragon Statue' } },
 ];
-var museumData;
 
 const npcData = [
     { id: 'old_fisher', name: 'Old Fisher Tom', role: 'guide', location: 'village_pond', dialogue: 'Welcome, young angler!' },
     { id: 'shop_owner', name: 'Bait Betty', role: 'shopkeeper', location: 'village_pond', dialogue: 'Need bait? I got you covered!' },
     { id: 'museum_guard', name: 'Guard Marcus', role: 'museum', location: 'village_pond', dialogue: 'The museum is open to collectors.' },
 ];
-var npcData;
 
 const rarityData = {
     common:    { name: 'Common',    color: 0xaaaaaa, dropWeight: 50, glowColor: 0x000000 },
@@ -498,14 +489,12 @@ const rarityData = {
     epic:      { name: 'Epic',      color: 0xaa55ff, dropWeight: 4,  glowColor: 0x7733cc },
     legendary: { name: 'Legendary', color: 0xffaa00, dropWeight: 1,  glowColor: 0xffaa00 },
 };
-var rarityData;
 
 const restaurantData = [
     { id: 'order_1', name: 'Fresh Carp', fishRequired: 'common_carp', amount: 5, reward: { gold: 100, exp: 50, diamond: 0 }, description: 'Ikan karper segar untuk sup.' },
     { id: 'order_2', name: 'Sushi Platter', fishRequired: 'tuna', amount: 3, reward: { gold: 500, exp: 200, diamond: 2 }, description: 'Tuna segar untuk sushi.' },
     { id: 'order_3', name: 'Royal Feast', fishRequired: 'golden_carp', amount: 1, reward: { gold: 2000, exp: 1000, diamond: 10 }, description: 'Hidangan mewah untuk raja.' },
 ];
-var restaurantData;
 
 const rodData = [
     { id: 'wood_rod',       name: 'Wood Rod',       level: 1,  price: 0,     durability: 100, luckBonus: 0,  speedBonus: 0,  description: 'Joran kayu sederhana untuk pemula.' },
@@ -515,7 +504,6 @@ const rodData = [
     { id: 'titanium_rod',   name: 'Titanium Rod',   level: 25, price: 25000, durability: 600, luckBonus: 35, speedBonus: 18, description: 'Joran titanium yang hampir tidak bisa patah.' },
     { id: 'legendary_rod',  name: 'Legendary Rod',  level: 35, price: 80000, durability: 999, luckBonus: 50, speedBonus: 25, description: 'Joran legendaris dari zaman kuno.' },
 ];
-var rodData;
 
 const seasonData = [
     { id: 'spring', name: 'Spring', bonusType: 'common',    bonus: 1.2, description: 'Musim semi. Banyak ikan kecil.' },
@@ -523,7 +511,6 @@ const seasonData = [
     { id: 'autumn', name: 'Autumn', bonusType: 'uncommon',  bonus: 1.3, description: 'Musim gugur. Ikan menyiapkan musim dingin.' },
     { id: 'winter', name: 'Winter', bonusType: 'rare',      bonus: 1.5, description: 'Musim dingin. Ikan langka lebih mudah.' },
 ];
-var seasonData;
 
 const settingsData = {
     musicVolume: { default: 100, min: 0, max: 100 },
@@ -532,7 +519,6 @@ const settingsData = {
     screenShake: { default: true },
     autoSave: { default: true },
 };
-var settingsData;
 
 const spotData = [
     {
@@ -645,7 +631,6 @@ const spotData = [
     },
 ];
 
-var spotData;
 
 const titleData = [
     { id: 'new_fisher', name: 'New Fisher', description: 'Start your journey.', requirement: 'none', bonus: {} },
@@ -655,7 +640,6 @@ const titleData = [
     { id: 'treasure_hunter', name: 'Treasure Hunter', description: 'Find 10 secret fish.', requirement: 'find_10_secret', bonus: { gold_find: 20 } },
     { id: 'night_owl', name: 'Night Owl', description: 'Catch 20 fish at night.', requirement: 'catch_20_night', bonus: { night_bonus: 10 } },
 ];
-var titleData;
 
 const weatherData = [
     { id: 'sunny', name: 'Sunny',  modifier: 1.0,  bonusFish: [],                    description: 'Cerah terang. Kondisi normal.' },
@@ -664,7 +648,6 @@ const weatherData = [
     { id: 'storm',  name: 'Storm',  modifier: 0.6,  bonusFish: ['dragon_fish', 'kraken'], description: 'Badai. Berbahaya tapi menguntungkan.' },
     { id: 'fog',    name: 'Fog',    modifier: 1.1,  bonusFish: ['ghost_fish', 'crystal_koi', 'moon_whisker'], description: 'Kabut tebal. Ikan mistis muncul.' },
 ];
-var weatherData;
 
 
 
@@ -1312,7 +1295,6 @@ class FishingSystem {
 
 
 // ===== SCENES =====
-import Phaser from 'phaser';
 
 class BootScene extends Phaser.Scene {
     constructor() { super({ key: 'BootScene' }); }
@@ -1380,7 +1362,6 @@ class BootScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class CharacterCreationScene extends Phaser.Scene {
     constructor() {
@@ -1518,7 +1499,6 @@ class CharacterCreationScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class FishingHubScene extends Phaser.Scene {
     constructor() { super({ key: 'FishingHubScene' }); }
@@ -1604,7 +1584,6 @@ class FishingHubScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class FishingScene extends Phaser.Scene {
 
@@ -1808,7 +1787,6 @@ class FishingScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class InventoryScene extends Phaser.Scene {
     constructor() {
@@ -1985,7 +1963,6 @@ class InventoryScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class FishBookScene extends Phaser.Scene {
     constructor() { super({ key: 'FishBookScene' }); }
@@ -2088,7 +2065,6 @@ class FishBookScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class FishMarketScene extends Phaser.Scene {
     constructor() { super({ key: 'FishMarketScene' }); }
@@ -2131,7 +2107,6 @@ class FishMarketScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class BaitShopScene extends Phaser.Scene {
     constructor() { super({ key: 'BaitShopScene' }); }
@@ -2167,7 +2142,6 @@ class BaitShopScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class RodWorkshopScene extends Phaser.Scene {
     constructor() { super({ key: 'RodWorkshopScene' }); }
@@ -2200,7 +2174,6 @@ class RodWorkshopScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class HarborScene extends Phaser.Scene {
     constructor() { super({ key: 'HarborScene' }); }
@@ -2245,7 +2218,6 @@ class HarborScene extends Phaser.Scene {
     }
 }
 
-import Phaser from 'phaser';
 
 class SettingsScene extends Phaser.Scene {
     constructor() { super({ key: 'SettingsScene' }); }
