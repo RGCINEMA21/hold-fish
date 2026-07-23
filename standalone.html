@@ -652,7 +652,6 @@ const weatherData = [
 
 
 
-
 // ===== MANAGERS =====
 /**
  * SaveManager - Menyimpan dan memuat data pemain via LocalStorage
@@ -1284,19 +1283,7 @@ class BootScene extends Phaser.Scene {
     constructor() { super({ key: 'BootScene' }); }
 
     preload() {
-        const self = this;
-        const logoPath = 'assets/images/logo/hold-fish-logo.png';
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function() {
-            self.textures.addImage('holdfish_logo', img);
-            self.logoLoaded = true;
-        };
-        img.onerror = function() {
-            self.logoLoaded = false;
-        };
-        img.src = logoPath;
-        this.logoLoaded = false;
+        this.load.image('holdfish_logo', 'assets/images/logo/hold-fish-logo.png');
     }
 
     create() {
@@ -1305,25 +1292,16 @@ class BootScene extends Phaser.Scene {
         this.cameras.main.setBackgroundColor(0x1a2a3a);
         const logoY = h / 2 - 60;
 
-        const showLogo = () => {
-            if (this.logoLoaded && this.textures.exists('holdfish_logo')) {
-                this.logo = this.add.image(w / 2, logoY, 'holdfish_logo')
-                    .setOrigin(0.5).setAlpha(0).setScale(0.5);
-                this.tweens.add({ targets: this.logo, alpha: 1, scale: 1, duration: 800, ease: 'Back.easeOut' });
-            } else {
-                this.add.text(w / 2, logoY - 20, '\u{1F3A3}', { fontSize: '64px' }).setOrigin(0.5);
-                var fb = this.add.text(w / 2, logoY + 40, 'HOLD FISH', {
-                    fontSize: '32px', color: '#4ac5ff', fontStyle: 'bold',
-                }).setOrigin(0.5).setAlpha(0);
-                this.tweens.add({ targets: fb, alpha: 1, duration: 600 });
-            }
-        };
-
-        this.time.delayedCall(500, showLogo);
-
-        this.tapText = this.add.text(w / 2, h / 2 + 120, '', {
-            fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
-        }).setOrigin(0.5).setAlpha(0);
+        if (this.textures.exists('holdfish_logo')) {
+            var logo = this.add.image(w / 2, logoY, 'holdfish_logo')
+                .setOrigin(0.5).setAlpha(0).setScale(0.5);
+            this.tweens.add({ targets: logo, alpha: 1, scale: 1, duration: 800, ease: 'Back.easeOut' });
+        } else {
+            this.add.text(w / 2, logoY - 20, '🎣', { fontSize: '64px' }).setOrigin(0.5);
+            this.add.text(w / 2, logoY + 40, 'HOLD FISH', {
+                fontSize: '32px', color: '#4ac5ff', fontStyle: 'bold',
+            }).setOrigin(0.5);
+        }
 
         var self = this;
         var goNext = function() {
@@ -1334,18 +1312,23 @@ class BootScene extends Phaser.Scene {
             }
         };
 
-        this.time.delayedCall(1200, function() {
-            self.tapText.setText('TAP TO START');
-            self.tweens.add({ targets: self.tapText, alpha: 1, duration: 400 });
-            self.tweens.add({ targets: self.tapText, alpha: 0.3, duration: 600, yoyo: true, repeat: -1 });
+        this.time.delayedCall(1500, function() {
+            self.input.on('pointerdown', goNext);
         });
 
-        this.time.delayedCall(1800, function() {
-            self.input.on('pointerdown', goNext);
+        this.add.text(w / 2, h / 2 + 100, 'TAP TO START', {
+            fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+        }).setOrigin(0.5).setAlpha(0).setName('tapText');
+
+        this.time.delayedCall(1000, function() {
+            var tap = self.children.getByName('tapText');
+            if (tap) {
+                self.tweens.add({ targets: tap, alpha: 1, duration: 400 });
+                self.tweens.add({ targets: tap, alpha: 0.3, duration: 600, yoyo: true, repeat: -1 });
+            }
         });
     }
 }
-
 
 class CharacterCreationScene extends Phaser.Scene {
     constructor() {
@@ -1512,10 +1495,10 @@ class FishingHubScene extends Phaser.Scene {
         const hfish = pd?.currency?.hfish ?? 0;
         const baitAmt = pd?.equipment?.baitAmount ?? 0;
 
-        this.add.text(w / 2, 85, `🧑 ${name} Lv.${level}`, {
+        this.add.text(w / 2, 56, `🧑 ${name} Lv.${level}`, {
             fontSize: '13px', color: '#ffffff',
         }).setOrigin(0.5);
-        this.add.text(w / 2, 105, `🪙 ${gold}  💎 ${diamond}  🐟 ${hfish}  🪱 ${baitAmt}`, {
+        this.add.text(w / 2, 76, `🪙 ${gold}  💎 ${diamond}  🐟 ${hfish}  🪱 ${baitAmt}`, {
             fontSize: '11px', color: '#cccccc',
         }).setOrigin(0.5);
 
